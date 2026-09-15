@@ -23,6 +23,13 @@ export default function Home() {
           >
             💰 Adicionar Investimentos
           </Link>
+
+          <Link 
+            href="/resumo"
+            className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold p-4 rounded-xl transition duration-200 shadow-md text-center block"
+          >
+            📈 Visualizar Dados e Resumo
+          </Link>
         </div>
       </div>
     </div>
