@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+// Adicionamos as importações do PieChart e Pie do Recharts
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
+
+// Paleta de cores para as fatias da pizza
+const CORES_PIZZA = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#A855F7'];
 
 export default function ResumoPage() {
   const [responsavel, setResponsavel] = useState('Davi');
@@ -13,10 +17,8 @@ export default function ResumoPage() {
   const [mensagem, setMensagem] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  // Filtro de Período para os Gráficos
   const [filtroPeriodoGrafico, setFiltroPeriodoGrafico] = useState('TODOS');
 
-  // Filtros internos da tabela
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('');
@@ -29,7 +31,6 @@ export default function ResumoPage() {
     setCarregando(true);
     setMensagem('');
     try {
-      // 1. Busca os Gastos e as Metas em paralelo
       const [resGastos, resMetas] = await Promise.all([
         fetch(`http://localhost:3000/api/gastos/${responsavel}/${ano}`),
         fetch(`http://localhost:3000/api/metas/${responsavel}/${ano}`)
@@ -61,7 +62,6 @@ export default function ResumoPage() {
     return isNaN(num) ? 0 : num;
   };
 
-  // Filtragem para a tabela
   const dadosFiltradosTabela = dadosGastos.filter((gasto) => {
     const matchMes = gasto.mes.toLowerCase().includes(filtroMes.toLowerCase());
     const matchCat = gasto.categoria.toLowerCase().includes(filtroCategoria.toLowerCase());
@@ -70,7 +70,6 @@ export default function ResumoPage() {
     return matchMes && matchCat && matchSub && matchMot;
   });
 
-  // Filtragem para os gráficos
   const dadosParaGraficos = dadosGastos.filter((gasto) => {
     if (filtroPeriodoGrafico === 'TODOS') return true;
     return gasto.mes.trim().toUpperCase() === filtroPeriodoGrafico.toUpperCase();
@@ -89,7 +88,6 @@ export default function ResumoPage() {
     return cat.trim().toUpperCase();
   };
 
-  // Mapeia as metas vindas de A5:B12
   const metasMap: { [key: string]: number } = {};
   dadosMetas.forEach((linha) => {
     if (linha[0]) {
@@ -99,7 +97,6 @@ export default function ResumoPage() {
     }
   });
 
-// Somatório dos gastos realizados por categoria
   const dadosCatMap = dadosParaGraficos.reduce((acc: any, item: any) => {
     const catPadrao = normalizarCategoria(item.categoria || '');
     const val = parseValor(item.valor);
@@ -108,13 +105,11 @@ export default function ResumoPage() {
     return acc;
   }, {});
 
-  // 👇 AQUI: Removemos 'PARCELAS CARRO' da lista de exibição do gráfico
   const ordemCategorias = [
     'TRANSPORTE', 'ALIMENTAÇÃO', 'CUIDADOS PESSOAIS', 
     'ATIVIDADES FÍSICAS', 'EXTRAS/FUTILIDADES', 'LAZER', 'IMPREVISTOS'
   ];
 
-  // Se o filtro for "Ano Todo", multiplicamos a meta mensal por 12. 
   const fatorMultiplicador = filtroPeriodoGrafico === 'TODOS' ? 12 : 1;
 
   const dadosGraficoCategorias = ordemCategorias.map((cat) => ({
@@ -123,17 +118,26 @@ export default function ResumoPage() {
     Planejado: Number(((metasMap[cat] || 0) * fatorMultiplicador).toFixed(2)),
   }));
 
-  // Sub-categorias
   const normalizarSubcategoria = (sub: string) => {
     const s = sub.trim().toLowerCase();
     if (s.includes('carro')) return 'Carro';
     if (s.includes('uber')) return 'Uber';
     if (s.includes('restaurante')) return 'Restaurante';
-    if (s.includes('gastronomia')) return 'Gastronomia';
+    if (s.includes('lanche')) return 'Lanche';
+    if (s.includes('supermercado')) return 'Supermercado';
+    if (s.includes('beleza')) return 'Beleza';
+    if (s.includes('terapia')) return 'Terapia';
+    if (s.includes('remedio') || s.includes('remédio')) return 'Remédio';
+    if (s.includes('viagen') || s.includes('viagem')) return 'Viagens';
+    if (s.includes('hobbie') || s.includes('hobbies')) return 'Hobbies';
+    if (s.includes('evento')) return 'Eventos';
+    if (s.includes('gym')) return 'Gym';
     if (s.includes('mimo')) return 'Mimos';
     if (s.includes('compra')) return 'Compras';
-    if (s.includes('hobbie') || s.includes('hobbies')) return 'Hobbies';
-    return sub.trim();
+    if (s.includes('flock')) return 'Flock';
+    if (s.includes('presente')) return 'Presentes';
+    if (s.includes('whey')) return 'Whey';
+    return sub.charAt(0).toUpperCase() + sub.slice(1).toLowerCase();
   };
 
   const dadosSubMap = dadosParaGraficos.reduce((acc: any, item: any) => {
@@ -144,12 +148,50 @@ export default function ResumoPage() {
     return acc;
   }, {});
 
-  const ordemSubcategorias = ['Carro', 'Uber', 'Restaurante', 'Gastronomia', 'Mimos', 'Compras', 'Hobbies'];
+  const ordemSubcategorias = [
+    'Carro', 'Uber', 'Restaurante', 'Lanche', 'Supermercado', 
+    'Beleza', 'Terapia', 'Remédio', 'Viagens', 'Hobbies', 
+    'Eventos', 'Gym', 'Mimos', 'Compras', 'Flock', 'Presentes', 'Whey'
+  ];
 
   const dadosGraficoSubcategorias = ordemSubcategorias.map((sub) => ({
     subcategoria: sub,
     Total: Number((dadosSubMap[sub] || 0).toFixed(2)),
   }));
+
+  // === NOVO: PREPARAÇÃO DOS DADOS PARA OS GRÁFICOS DE PIZZA ===
+  const dadosPizzasPorCategoria = ordemCategorias.map((cat) => {
+    // 1. Pega apenas os gastos dessa categoria específica
+    const gastosDaCategoria = dadosParaGraficos.filter(
+      (gasto) => normalizarCategoria(gasto.categoria || '') === cat
+    );
+
+    // 2. Agrupa esses gastos por subcategoria
+    const subMapDaCategoria = gastosDaCategoria.reduce((acc: any, item: any) => {
+      const sub = normalizarSubcategoria(item.subcategoria || 'Outros');
+      const val = parseValor(item.valor);
+      if (!acc[sub]) acc[sub] = 0;
+      acc[sub] += val;
+      return acc;
+    }, {});
+
+    // 3. Converte para o formato de array esperado pelo PieChart
+    const dataPizza = Object.keys(subMapDaCategoria)
+      .map((sub) => ({
+        name: sub,
+        value: Number(subMapDaCategoria[sub].toFixed(2)),
+      }))
+      .filter((item) => item.value > 0); // Remove o que for zero
+
+    // 4. Calcula o total gasto na categoria
+    const totalDaCategoria = dataPizza.reduce((sum, item) => sum + item.value, 0);
+
+    return {
+      categoria: cat,
+      total: totalDaCategoria,
+      dados: dataPizza,
+    };
+  }).filter(pizza => pizza.total > 0); // Exibe apenas pizzas que têm algum gasto no período
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -160,7 +202,6 @@ export default function ResumoPage() {
         
         <h1 className="text-2xl font-bold mb-6 text-center text-purple-400">Consulta de Gastos e Relatórios</h1>
 
-        {/* Filtro Inicial por Ano e Responsável */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-6 bg-gray-700/50 p-4 rounded-lg border border-gray-600">
           <div>
             <label className="block text-sm font-medium mb-1">Responsável</label>
@@ -200,7 +241,6 @@ export default function ResumoPage() {
 
         {dadosGastos.length > 0 && (
           <>
-            {/* Abas de Alternância */}
             <div className="flex justify-center gap-4 mb-6">
               <button 
                 onClick={() => setVisao('tabela')}
@@ -216,7 +256,6 @@ export default function ResumoPage() {
               </button>
             </div>
 
-            {/* VISÃO 1: TABELA */}
             {visao === 'tabela' && (
               <div className="overflow-x-auto">
                 <p className="text-sm text-gray-400 mb-3">Exibindo {dadosFiltradosTabela.length} de {dadosGastos.length} registro(s).</p>
@@ -260,10 +299,8 @@ export default function ResumoPage() {
               </div>
             )}
 
-            {/* VISÃO 2: PAINEL DE GRÁFICOS COM META PLANEJADA */}
             {visao === 'graficos' && (
               <div className="space-y-8">
-                {/* Seletor de Período */}
                 <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-700 flex flex-col md:flex-row items-center justify-between gap-4">
                   <span className="font-medium text-gray-300">Filtrar Período dos Gráficos:</span>
                   <select 
@@ -288,6 +325,13 @@ export default function ResumoPage() {
                   <div className="w-full h-96">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={dadosGraficoCategorias}>
+                        <defs>
+                          <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="50%" stopColor="#10B981" />
+                            <stop offset="50%" stopColor="#EF4444" />
+                          </linearGradient>
+                        </defs>
+                        
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                         <XAxis dataKey="categoria" stroke="#9CA3AF" interval={0} angle={-15} textAnchor="end" height={60} tick={{fontSize: 11}} />
                         <YAxis stroke="#9CA3AF" />
@@ -296,36 +340,89 @@ export default function ResumoPage() {
                           contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }} 
                         />
                         <Legend />
-                        {/* Barra verde para o Gasto Real */}
-                        <Bar dataKey="Realizado" fill="#10B981" radius={[4, 4, 0, 0]} />
-                        {/* Barra azul/cinza para a Meta Planejada */}
+                        
+                        <Bar dataKey="Realizado" fill="url(#splitColor)" radius={[4, 4, 0, 0]}>
+                          {dadosGraficoCategorias.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.Realizado > entry.Planejado ? '#EF4444' : '#10B981'} 
+                            />
+                          ))}
+                        </Bar>
+
                         <Bar dataKey="Planejado" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* GRÁFICO 2: SUB-CATEGORIAS */}
+                {/* GRÁFICO 2: SUB-CATEGORIAS TOTAL */}
                 <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
                   <h2 className="text-lg font-bold text-center mb-4 text-indigo-400">
-                    Gastos por Sub-categoria ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
+                    Gastos Totais por Sub-categoria ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
                   </h2>
-                  <div className="w-full h-80">
+                  <div className="w-full h-96">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={dadosGraficoSubcategorias}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="subcategoria" stroke="#9CA3AF" interval={0} angle={-15} textAnchor="end" height={50} />
+                        <XAxis dataKey="subcategoria" stroke="#9CA3AF" interval={0} angle={-45} textAnchor="end" height={80} tick={{fontSize: 10}} />
                         <YAxis stroke="#9CA3AF" />
                         <Tooltip 
                           formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
                           contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }} 
                         />
-                        <Legend />
+                        <Legend verticalAlign="top" height={36}/>
                         <Bar dataKey="Total" fill="#6366F1" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
+
+                {/* GRÁFICO 3: PIZZAS DETALHADAS POR CATEGORIA */}
+                {dadosPizzasPorCategoria.length > 0 && (
+                  <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
+                    <h2 className="text-lg font-bold text-center mb-2 text-pink-400">
+                      Distribuição Interna das Categorias ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
+                    </h2>
+                    <p className="text-xs text-center text-gray-400 mb-8">Como o valor de cada categoria foi dividido entre suas sub-categorias</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {dadosPizzasPorCategoria.map((pizza, index) => (
+                        <div key={index} className="bg-gray-800/80 p-4 rounded-xl border border-gray-600 flex flex-col items-center">
+                          <h3 className="text-md font-bold text-gray-200 mb-1">{pizza.categoria}</h3>
+                          <p className="text-sm font-semibold text-green-400 mb-2">
+                            Total: R$ {pizza.total.toFixed(2).replace('.', ',')}
+                          </p>
+                          
+                          <div className="w-full h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={pizza.dados}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={70}
+                                  label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
+                                >
+                                  {pizza.dados.map((entry, idx) => (
+                                    <Cell key={`cell-${idx}`} fill={CORES_PIZZA[idx % CORES_PIZZA.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip 
+                                  formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
+                                  contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }}
+                                />
+                                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }}/>
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
