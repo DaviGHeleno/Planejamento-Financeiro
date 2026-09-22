@@ -6,6 +6,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianG
 
 export default function InvestimentosPage() {
   const [isAdicionando, setIsAdicionando] = useState(false);
+  const [isResgatando, setIsResgatando] = useState(false);
   const [carregando, setCarregando] = useState(true);
   
   const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
@@ -26,6 +27,14 @@ export default function InvestimentosPage() {
   const [invResponsavel, setInvResponsavel] = useState('Davi');
   const [invValor, setInvValor] = useState('');
   const [invMensagem, setInvMensagem] = useState('');
+
+  // Estados específicos para o Resgate
+  const [resAno, setResAno] = useState(2026);
+  const [resMes, setResMes] = useState('MARÇO');
+  const [resResponsavel, setResResponsavel] = useState('Davi');
+  const [resTipo, setResTipo] = useState('Futuro'); // 'Futuro' ou 'Pessoal'
+  const [resValor, setResValor] = useState('');
+  const [resMensagem, setResMensagem] = useState('');
 
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
@@ -153,6 +162,38 @@ export default function InvestimentosPage() {
     }
   };
 
+  const handleResgateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResMensagem('Processando resgate...');
+    const mesFormatado = resMes.charAt(0) + resMes.slice(1).toLowerCase();
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/resgate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          ano: Number(resAno), 
+          mes: mesFormatado, 
+          responsavel: resResponsavel, 
+          tipo: resTipo, 
+          valor: Number(resValor) 
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setResMensagem(`Resgate efetuado com sucesso!`);
+        setResValor('');
+        carregarDashboard();
+      } else {
+        setResMensagem(`Erro: ${data.error || 'Erro ao realizar resgate'}`);
+      }
+    } catch {
+      setResMensagem('Erro de conexão com o back-end.');
+    }
+  };
+
   const tooltipFormatter = (value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name];
 
   const totalDaviNum = parseCurrency(totais.daviFuturo) + parseCurrency(totais.daviPresente);
@@ -163,18 +204,27 @@ export default function InvestimentosPage() {
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
         
         {/* Cabeçalho */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4">
-          <Link href="/" className="text-sm text-green-400 hover:underline mb-4 md:mb-0">← Voltar para o Menu</Link>
-          <h1 className="text-2xl font-bold text-green-400">Dashboard de Evolução de Investimentos</h1>
-          <button 
-            onClick={() => setIsAdicionando(!isAdicionando)}
-            className={`px-4 py-2 rounded font-bold transition duration-200 ${isAdicionando ? 'bg-red-600 hover:bg-red-500' : 'bg-green-600 hover:bg-green-500'} text-white`}
-          >
-            {isAdicionando ? '✖ Cancelar' : '➕ ADICIONAR INVESTIMENTO'}
-          </button>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4 gap-4">
+          <Link href="/" className="text-sm text-green-400 hover:underline">← Voltar para o Menu</Link>
+          <h1 className="text-2xl font-bold text-green-400">Dashboard de Investimentos</h1>
+          
+          <div className="flex gap-3">
+            <button 
+              onClick={() => { setIsAdicionando(!isAdicionando); setIsResgatando(false); }}
+              className={`px-4 py-2 rounded font-bold transition duration-200 ${isAdicionando ? 'bg-gray-600 hover:bg-gray-500' : 'bg-green-600 hover:bg-green-500'} text-white text-sm`}
+            >
+              {isAdicionando ? '✖ Cancelar' : '➕ ADICIONAR'}
+            </button>
+            <button 
+              onClick={() => { setIsResgatando(!isResgatando); setIsAdicionando(false); }}
+              className={`px-4 py-2 rounded font-bold transition duration-200 ${isResgatando ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-500'} text-white text-sm`}
+            >
+              {isResgatando ? '✖ Cancelar' : '➖ RESGATAR'}
+            </button>
+          </div>
         </div>
 
-        {/* Formulário */}
+        {/* Formulário de Adicionar Investimento */}
         {isAdicionando && (
           <div className="mb-10 bg-gray-700/30 p-6 rounded-xl border border-gray-600 max-w-xl mx-auto">
             <h2 className="text-xl font-bold mb-6 text-center text-green-400">Registrar Novo Aporte (70/30)</h2>
@@ -210,10 +260,57 @@ export default function InvestimentosPage() {
           </div>
         )}
 
-        {/* Cards de Totais com Subcategorias de Futuro (1/3 e 2/3) */}
+        {/* Formulário de Registrar Resgate */}
+        {isResgatando && (
+          <div className="mb-10 bg-gray-700/30 p-6 rounded-xl border border-gray-600 max-w-xl mx-auto">
+            <h2 className="text-xl font-bold mb-6 text-center text-red-400">Registrar Resgate de Investimento</h2>
+            <form onSubmit={handleResgateSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Responsável</label>
+                  <select value={resResponsavel} onChange={(e) => setResResponsavel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                    <option value="Davi">Davi</option>
+                    <option value="Stella">Stella</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tipo de Resgate</label>
+                  <select value={resTipo} onChange={(e) => setResTipo(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                    <option value="Futuro">Futuro</option>
+                    <option value="Pessoal">Pessoal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ano</label>
+                  <input type="number" value={resAno} onChange={(e) => setResAno(Number(e.target.value))} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Mês</label>
+                  <select value={resMes} onChange={(e) => setResMes(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                    {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Valor do Resgate (R$)</label>
+                <input type="number" step="0.01" placeholder="Ex: 500" value={resValor} onChange={(e) => setResValor(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required />
+              </div>
+
+              <button type="submit" className="w-full bg-red-600 hover:bg-red-400 text-white font-bold p-3 rounded transition duration-200 mt-4">
+                Efetuar Resgate
+              </button>
+            </form>
+            {resMensagem && <p className="mt-4 text-center font-semibold text-sm text-amber-300">{resMensagem}</p>}
+          </div>
+        )}
+
+        {/* Cards de Totais */}
         {!carregando && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            
             {/* TOTAL DAVI */}
             <div className="bg-gray-700/50 p-6 rounded-xl border border-gray-600 shadow-md flex flex-col justify-between">
               <div>
@@ -277,7 +374,6 @@ export default function InvestimentosPage() {
               <h3 className="text-green-400 text-sm font-bold uppercase tracking-wider mb-2">Valor Total Juntos</h3>
               <p className="text-3xl font-bold text-white">{totais.totalJuntos || 'R$ 0,00'}</p>
             </div>
-
           </div>
         )}
 

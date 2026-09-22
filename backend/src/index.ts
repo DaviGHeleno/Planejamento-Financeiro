@@ -125,6 +125,68 @@ app.post('/api/investimento', async (req: Request, res: Response) => {
   }
 });
 
+// 2.1. ESCREVER RESGATE DE INVESTIMENTO (Subtração)
+app.post('/api/resgate', async (req: Request, res: Response) => {
+  try {
+    const { ano, mes, responsavel, tipo, valor } = req.body; // tipo: 'Futuro' ou 'Pessoal'
+    const valorResgate = Number(valor);
+
+    if (isNaN(valorResgate) || valorResgate <= 0) {
+      return res.status(400).send({ error: 'Valor de resgate inválido.' });
+    }
+
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const linhaMes = meses.indexOf(mes) + 3; 
+    if (linhaMes < 3) return res.status(400).send({ error: 'Mês inválido' });
+
+    let colunaAlvo = '';
+
+    // Mapeamento das colunas baseado no Ano, Responsável e Tipo (Futuro vs Pessoal)
+    const mapaColunas: Record<number, { Davi: { Futuro: string, Pessoal: string }, Stella: { Futuro: string, Pessoal: string } }> = {
+      2025: { Davi: { Futuro: 'B', Pessoal: 'C' }, Stella: { Futuro: 'D', Pessoal: 'E' } },
+      2026: { Davi: { Futuro: 'H', Pessoal: 'I' }, Stella: { Futuro: 'J', Pessoal: 'K' } },
+      2027: { Davi: { Futuro: 'L', Pessoal: 'M' }, Stella: { Futuro: 'N', Pessoal: 'O' } },
+      2028: { Davi: { Futuro: 'P', Pessoal: 'Q' }, Stella: { Futuro: 'R', Pessoal: 'S' } },
+      2029: { Davi: { Futuro: 'T', Pessoal: 'U' }, Stella: { Futuro: 'V', Pessoal: 'W' } },
+    };
+
+    const configAno = mapaColunas[Number(ano)];
+    if (!configAno) return res.status(400).send({ error: 'Ano inválido' });
+
+    colunaAlvo = configAno[responsavel as 'Davi' | 'Stella']?.[tipo as 'Futuro' | 'Pessoal'];
+    if (!colunaAlvo) return res.status(400).send({ error: 'Parâmetros de responsável ou tipo inválidos' });
+
+    const celulaAlvo = `Investimentos!${colunaAlvo}${linhaMes}`;
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: 'v4', auth: client as any });
+
+    // 1. Ler o valor atual da célula na planilha
+    const leitura = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: celulaAlvo,
+    });
+
+    const valorAtualStr = leitura.data.values?.[0]?.[0] || '0';
+    const valorAtualNum = parseFloat(valorAtualStr.toString().replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+
+    // 2. Subtrair o valor do resgate
+    const novoValor = valorAtualNum - valorResgate;
+
+    // 3. Atualizar a planilha com o valor subtraído
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: celulaAlvo,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[novoValor]] },
+    });
+
+    res.json({ message: 'Resgate registrado com sucesso!', novoValor });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: 'Erro ao registrar resgate.' });
+  }
+});
+
 // 3. LER METAS MENSAIS (A5:B12) COM SUPORTE A ANOS DINÂMICOS
 app.get('/api/metas/:responsavel/:ano', async (req: Request, res: Response) => {
   try {
