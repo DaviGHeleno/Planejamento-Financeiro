@@ -15,31 +15,61 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
-// 1. LER INVESTIMENTOS (Dashboard Completo)
+// 1. LER INVESTIMENTOS (Dashboard Completo com Reserva de Emergência e Casamento)
 app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
   try {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client as any });
     
-    // Busca a matriz de todos os meses/anos e as células específicas de totais
     const response = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: SPREADSHEET_ID,
       ranges: [
-        'Investimentos!A3:W14', // Histórico mensal de 2025 a 2029
-        'Investimentos!B22',    // Total Davi
-        'Investimentos!D22',    // Total Stella
-        'Investimentos!B23'     // Total Juntos
+        'Investimentos!A3:W14', // Histórico mensal
+        'Investimentos!B21',     // Davi Futuro Total (B21)
+        'Investimentos!C21',     // Davi Pessoal (C21)
+        'Investimentos!D21',     // Stella Futuro Total (D21)
+        'Investimentos!E21',     // Stella Pessoal (E21)
+        'Investimentos!B23',     // Total Juntos
       ],
     });
-    
-    const [mensal, totalDavi, totalStella, totalJuntos] = response.data.valueRanges || [];
-    
-    res.json({ 
-      mensal: mensal.values || [], 
+
+    const valueRanges = response.data.valueRanges || [];
+
+    const daviFuturoTotal = valueRanges[1]?.values?.[0]?.[0] || 'R$ 0,00';
+    const daviPresente = valueRanges[2]?.values?.[0]?.[0] || 'R$ 0,00';
+    const stellaFuturoTotal = valueRanges[3]?.values?.[0]?.[0] || 'R$ 0,00';
+    const stellaPessoal = valueRanges[4]?.values?.[0]?.[0] || 'R$ 0,00';
+    const totalJuntos = valueRanges[5]?.values?.[0]?.[0] || 'R$ 0,00';
+
+    // Função auxiliar para calcular 1/3 (Reserva) e 2/3 (Casamento)
+    const calcularFracoes = (valStr: string) => {
+      const num = parseFloat(valStr.toString().replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+      const reserva = num * (1 / 3);
+      const casamento = num * (2 / 3);
+      return {
+        reserva: reserva.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+        casamento: casamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+      };
+    };
+
+    const daviReserva = calcularFracoes(daviFuturoTotal).reserva;
+    const daviCasamento = calcularFracoes(daviFuturoTotal).casamento;
+
+    const stellaReserva = calcularFracoes(stellaFuturoTotal).reserva;
+    const stellaCasamento = calcularFracoes(stellaFuturoTotal).casamento;
+
+    res.json({
+      historico: valueRanges[0]?.values || [],
       totais: {
-        davi: totalDavi.values?.[0]?.[0] || 'R$ 0,00',
-        stella: totalStella.values?.[0]?.[0] || 'R$ 0,00',
-        juntos: totalJuntos.values?.[0]?.[0] || 'R$ 0,00'
+        daviFuturo: daviFuturoTotal,
+        daviReserva,
+        daviCasamento,
+        daviPresente,
+        stellaFuturo: stellaFuturoTotal,
+        stellaReserva,
+        stellaCasamento,
+        stellaPessoal,
+        totalJuntos
       }
     });
   } catch (error) {
@@ -118,14 +148,13 @@ app.get('/api/metas/:responsavel/:ano', async (req: Request, res: Response) => {
 // 4. LER GASTOS DE UM RESPONSÁVEL POR ANO (A48:E)
 app.get('/api/gastos/:responsavel/:ano', async (req: Request, res: Response) => {
   try {
-    const { responsavel, ano } = req.params; // ex: Davi, 26 (ou 2026)
-    const anoAbreviado = ano.length === 4 ? ano.slice(2) : ano; // converte 2026 para 26 se necessário
+    const { responsavel, ano } = req.params; 
+    const anoAbreviado = ano.length === 4 ? ano.slice(2) : ano; 
     const abaNome = `Mensal ${anoAbreviado} - ${responsavel}`; 
 
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client as any });
 
-    // Verifica se a aba existe antes de buscar para evitar erros 500 se a aba do ano não existir ainda
     const spreadsheetInfo = await sheets.spreadsheets.get({
       spreadsheetId: SPREADSHEET_ID,
     });
@@ -183,9 +212,7 @@ app.post('/api/gasto', async (req: Request, res: Response) => {
           requests: [
             {
               addSheet: {
-                properties: {
-                  title: aba,
-                },
+                properties: { title: aba },
               },
             },
           ],
@@ -233,7 +260,6 @@ app.get('/api/objetivos', async (req: Request, res: Response) => {
   }
 });
 
-// O app.listen fica obrigatoriamente no final de tudo
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta http://localhost:${PORT}`);
 });

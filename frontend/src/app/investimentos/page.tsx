@@ -9,7 +9,17 @@ export default function InvestimentosPage() {
   const [carregando, setCarregando] = useState(true);
   
   const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
-  const [totais, setTotais] = useState({ davi: 'R$ 0,00', stella: 'R$ 0,00', juntos: 'R$ 0,00' });
+  const [totais, setTotais] = useState({
+    daviFuturo: 'R$ 0,00',
+    daviReserva: 'R$ 0,00',
+    daviCasamento: 'R$ 0,00',
+    daviPresente: 'R$ 0,00',
+    stellaFuturo: 'R$ 0,00',
+    stellaReserva: 'R$ 0,00',
+    stellaCasamento: 'R$ 0,00',
+    stellaPessoal: 'R$ 0,00',
+    totalJuntos: 'R$ 0,00'
+  });
 
   const [invAno, setInvAno] = useState(2026);
   const [invMes, setInvMes] = useState('MARÇO');
@@ -19,33 +29,43 @@ export default function InvestimentosPage() {
 
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
-  // Função CORRIGIDA para tratar valores negativos e espaços
   const parseValor = (val: string | undefined) => {
     if (!val) return 0;
-    // Remove "R$", remove todos os espaços, remove os pontos de milhar, e troca vírgula por ponto
     const limpo = val.toString().replace(/R\$/g, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
     const num = parseFloat(limpo);
     return isNaN(num) ? 0 : num;
   };
 
+  const parseCurrency = (val: string | undefined) => {
+    if (!val) return 0;
+    const clean = val.toString().replace(/[R$\s.]/g, '').replace(',', '.');
+    return parseFloat(clean) || 0;
+  };
+
+  const formatCurrency = (val: number) => {
+    return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
   const carregarDashboard = async () => {
     setCarregando(true);
     try {
-      const res = await fetch('http://localhost:3000/api/investimentos/dashboard');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      const res = await fetch(`${apiUrl}/api/investimentos/dashboard`);
       const data = await res.json();
       
       if (res.ok) {
-        setTotais(data.totais);
+        if (data.totais) {
+          setTotais(data.totais);
+        }
         
-        const linhas = data.mensal;
+        const linhas = data.historico || [];
         
-        // Mapeamento EXATO das colunas indicadas:
         const anosMap: Record<number, { d: number[], s: number[] }> = {
-          2025: { d: [1, 2], s: [3, 4] },    // B,C e D,E
-          2026: { d: [7, 8], s: [9, 10] },   // H,I e J,K
-          2027: { d: [11, 12], s: [13, 14] },// L,M e N,O
-          2028: { d: [15, 16], s: [17, 18] },// P,Q e R,S
-          2029: { d: [19, 20], s: [21, 22] } // T,U e V,W
+          2025: { d: [1, 2], s: [3, 4] },
+          2026: { d: [7, 8], s: [9, 10] },
+          2027: { d: [11, 12], s: [13, 14] },
+          2028: { d: [15, 16], s: [17, 18] },
+          2029: { d: [19, 20], s: [21, 22] }
         };
         
         const mesesAbrev = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -61,17 +81,14 @@ export default function InvestimentosPage() {
             const row = linhas[m] || [];
             const indices = anosMap[ano];
             
-            // Pega o valor exato da tabela, aceitando números negativos
             const daviFuturoMes = parseValor(row[indices.d[0]]);
             const daviPessoalMes = parseValor(row[indices.d[1]]);
             const stellaFuturoMes = parseValor(row[indices.s[0]]);
             const stellaPessoalMes = parseValor(row[indices.s[1]]);
             
-            // Verifica se as células têm algum conteúdo (mesmo que seja negativo)
             const textoLinha = `${row[indices.d[0]] || ''}${row[indices.d[1]] || ''}${row[indices.s[0]] || ''}${row[indices.s[1]] || ''}`;
             const temConteudo = textoLinha.trim() !== '';
             
-            // Soma mês a mês para montar a linha de evolução (se for negativo, ele subtrai automaticamente)
             accDaviFuturo += daviFuturoMes;
             accDaviPessoal += daviPessoalMes;
             accStellaFuturo += stellaFuturoMes;
@@ -93,7 +110,6 @@ export default function InvestimentosPage() {
           }
         }
         
-        // Remove os meses futuros em branco
         while(historico.length > 0 && !historico[historico.length - 1].teveAporte) {
           historico.pop();
         }
@@ -117,7 +133,8 @@ export default function InvestimentosPage() {
     const mesFormatado = invMes.charAt(0) + invMes.slice(1).toLowerCase();
 
     try {
-      const response = await fetch('http://localhost:3000/api/investimento', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/investimento`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ano: Number(invAno), mes: mesFormatado, responsavel: invResponsavel, valor: Number(invValor) }),
@@ -137,6 +154,9 @@ export default function InvestimentosPage() {
   };
 
   const tooltipFormatter = (value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name];
+
+  const totalDaviNum = parseCurrency(totais.daviFuturo) + parseCurrency(totais.daviPresente);
+  const totalStellaNum = parseCurrency(totais.stellaFuturo) + parseCurrency(totais.stellaPessoal);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -190,21 +210,74 @@ export default function InvestimentosPage() {
           </div>
         )}
 
-        {/* Cards de Totais */}
+        {/* Cards de Totais com Subcategorias de Futuro (1/3 e 2/3) */}
         {!carregando && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div className="bg-gray-700/50 p-6 rounded-xl border border-gray-600 text-center shadow-md">
-              <h3 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2">Total Davi</h3>
-              <p className="text-2xl font-bold text-blue-400">{totais.davi}</p>
+            
+            {/* TOTAL DAVI */}
+            <div className="bg-gray-700/50 p-6 rounded-xl border border-gray-600 shadow-md flex flex-col justify-between">
+              <div>
+                <h3 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2 text-center">Total Davi</h3>
+                <p className="text-2xl font-bold text-blue-400 text-center mb-4">
+                  {totalDaviNum > 0 ? formatCurrency(totalDaviNum) : (totais.daviFuturo || 'R$ 0,00')}
+                </p>
+              </div>
+              <div className="border-t border-gray-600/80 pt-3 space-y-1 text-xs">
+                {/* Linha do Valor Total de Futuro */}
+                <div className="flex justify-between items-center pb-1 border-b border-gray-600/50">
+                  <span className="text-emerald-400 font-bold">Total Futuro:</span>
+                  <span className="font-bold text-emerald-400">{totais.daviFuturo || 'R$ 0,00'}</span>
+                </div>
+                <div className="flex justify-between items-center pl-2 pt-1">
+                  <span className="text-gray-400">└ Reserva de Emergência:</span>
+                  <span className="font-semibold text-emerald-300">{totais.daviReserva || 'R$ 0,00'}</span>
+                </div>
+                <div className="flex justify-between items-center pl-2 pb-1 border-b border-gray-600/50">
+                  <span className="text-gray-400">└ Casamento:</span>
+                  <span className="font-semibold text-emerald-300">{totais.daviCasamento || 'R$ 0,00'}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-amber-400">Pessoal:</span>
+                  <span className="font-semibold text-amber-300">{totais.daviPresente || 'R$ 0,00'}</span>
+                </div>
+              </div>
             </div>
-            <div className="bg-gray-700/50 p-6 rounded-xl border border-gray-600 text-center shadow-md">
-              <h3 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2">Total Stella</h3>
-              <p className="text-2xl font-bold text-purple-400">{totais.stella}</p>
+
+            {/* TOTAL STELLA */}
+            <div className="bg-gray-700/50 p-6 rounded-xl border border-gray-600 shadow-md flex flex-col justify-between">
+              <div>
+                <h3 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2 text-center">Total Stella</h3>
+                <p className="text-2xl font-bold text-purple-400 text-center mb-4">
+                  {totalStellaNum > 0 ? formatCurrency(totalStellaNum) : (totais.stellaFuturo || 'R$ 0,00')}
+                </p>
+              </div>
+              <div className="border-t border-gray-600/80 pt-3 space-y-1 text-xs">
+                {/* Linha do Valor Total de Futuro */}
+                <div className="flex justify-between items-center pb-1 border-b border-gray-600/50">
+                  <span className="text-emerald-400 font-bold">Total Futuro:</span>
+                  <span className="font-bold text-emerald-400">{totais.stellaFuturo || 'R$ 0,00'}</span>
+                </div>
+                <div className="flex justify-between items-center pl-2 pt-1">
+                  <span className="text-gray-400">└ Reserva de Emergência:</span>
+                  <span className="font-semibold text-emerald-300">{totais.stellaReserva || 'R$ 0,00'}</span>
+                </div>
+                <div className="flex justify-between items-center pl-2 pb-1 border-b border-gray-600/50">
+                  <span className="text-gray-400">└ Casamento:</span>
+                  <span className="font-semibold text-emerald-300">{totais.stellaCasamento || 'R$ 0,00'}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-amber-400">Pessoal:</span>
+                  <span className="font-semibold text-amber-300">{totais.stellaPessoal || 'R$ 0,00'}</span>
+                </div>
+              </div>
             </div>
-            <div className="bg-gray-700/50 p-6 rounded-xl border border-green-600 text-center shadow-md">
+
+            {/* VALOR TOTAL JUNTOS */}
+            <div className="bg-gray-700/50 p-6 rounded-xl border border-green-600 text-center shadow-md flex flex-col justify-center">
               <h3 className="text-green-400 text-sm font-bold uppercase tracking-wider mb-2">Valor Total Juntos</h3>
-              <p className="text-3xl font-bold text-white">{totais.juntos}</p>
+              <p className="text-3xl font-bold text-white">{totais.totalJuntos || 'R$ 0,00'}</p>
             </div>
+
           </div>
         )}
 
