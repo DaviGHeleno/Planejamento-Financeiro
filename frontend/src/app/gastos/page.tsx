@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 
 interface ItemGasto {
   id: string;
@@ -24,8 +25,9 @@ export default function GastosPage() {
   const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'gym', 'esportes', 'mimos', 'compras', 'flock'];
   const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'DAVI', 'PRESENTE'];
 
+  // Inicia com campos vazios por padrão agora, obrigando a preencher
   const [itens, setItens] = useState<ItemGasto[]>([
-    { id: '1', categoria: 'Alimentação', subcategoria: 'lanche', motivo: 'PESSOAL', valor: '' }
+    { id: '1', categoria: '', subcategoria: '', motivo: '', valor: '' }
   ]);
 
   const adicionarLinha = () => {
@@ -33,9 +35,9 @@ export default function GastosPage() {
       ...prev,
       {
         id: Date.now().toString(),
-        categoria: prev[prev.length - 1]?.categoria || 'Alimentação',
-        subcategoria: prev[prev.length - 1]?.subcategoria || 'lanche',
-        motivo: prev[prev.length - 1]?.motivo || 'PESSOAL',
+        categoria: prev[prev.length - 1]?.categoria || '',
+        subcategoria: prev[prev.length - 1]?.subcategoria || '',
+        motivo: prev[prev.length - 1]?.motivo || '',
         valor: ''
       }
     ]);
@@ -59,6 +61,59 @@ export default function GastosPage() {
         adicionarLinha();
       }
     }
+  };
+
+  // Retorna string vazia se não encontrar ou se vier errado do Excel
+  const normalizarOpcaoRigorosa = (valor: string, opcoes: string[]) => {
+    if (!valor) return '';
+    const match = opcoes.find(opt => opt.toLowerCase() === valor.toLowerCase().trim());
+    return match || '';
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const workbook = XLSX.read(bstr, { type: 'binary' });
+        const wsname = workbook.SheetNames[0];
+        const ws = workbook.Sheets[wsname];
+        
+        const data = XLSX.utils.sheet_to_json<any>(ws);
+
+        if (data.length === 0) {
+          setMensagem('❌ O ficheiro Excel está vazio.');
+          return;
+        }
+
+        const novosItens: ItemGasto[] = data.map((row, index) => {
+          const categoriaKey = Object.keys(row).find(k => k.toLowerCase().includes('categor'));
+          const subcategoriaKey = Object.keys(row).find(k => k.toLowerCase().includes('sub'));
+          const motivoKey = Object.keys(row).find(k => k.toLowerCase().includes('motivo'));
+          const valorKey = Object.keys(row).find(k => k.toLowerCase().includes('valor') || k.toLowerCase().includes('r$'));
+
+          return {
+            id: (Date.now() + index).toString(),
+            categoria: normalizarOpcaoRigorosa(categoriaKey ? String(row[categoriaKey]) : '', categoriaOpcoes),
+            subcategoria: normalizarOpcaoRigorosa(subcategoriaKey ? String(row[subcategoriaKey]) : '', subcategoriaOpcoes),
+            motivo: normalizarOpcaoRigorosa(motivoKey ? String(row[motivoKey]) : '', motivoOpcoes),
+            valor: valorKey ? String(row[valorKey]) : ''
+          };
+        });
+
+        setItens(novosItens);
+        setMensagem(`✅ Ficheiro lido com sucesso! Atenção: as linhas a vermelho precisam ser corrigidas antes do envio.`);
+      } catch (error) {
+        console.error(error);
+        setMensagem('❌ Erro ao processar o Excel.');
+      }
+    };
+    reader.readAsBinaryString(file);
+    // Limpa o input file para permitir fazer upload do mesmo ficheiro novamente se necessário
+    e.target.value = '';
   };
 
   const validarFormatoMoeda = (val: string) => {
@@ -89,8 +144,15 @@ export default function GastosPage() {
 
     const temValorInvalido = itensValidos.some(i => !validarFormatoMoeda(i.valor));
     if (temValorInvalido) {
-      setMensagem('❌ Erro: Formato inválido. Use formatos como 60.000,40 | 60000,40 | 70.55 | 700');
+      setMensagem('❌ Erro: Formato de valor inválido.');
       return; 
+    }
+
+    // NOVA VALIDAÇÃO: Bloqueia se alguma linha tiver o valor preenchido mas faltar classificar algo
+    const temCamposVazios = itensValidos.some(i => !i.categoria || !i.subcategoria || !i.motivo);
+    if (temCamposVazios) {
+      setMensagem('❌ Erro: Existem campos vazios. Preencha todas as caixas delimitadas a vermelho antes de enviar.');
+      return;
     }
 
     setEnviando(true);
@@ -115,7 +177,7 @@ export default function GastosPage() {
       const data = await response.json();
       if (response.ok) {
         setMensagem(`✅ Sucesso: ${itensParaEnviar.length} gasto(s) cadastrado(s) na aba "${abaNome}"!`);
-        setItens([{ id: Date.now().toString(), categoria: 'Alimentação', subcategoria: 'lanche', motivo: 'PESSOAL', valor: '' }]);
+        setItens([{ id: Date.now().toString(), categoria: '', subcategoria: '', motivo: '', valor: '' }]);
       } else {
         setMensagem(`❌ Erro: ${data.error || 'Erro ao salvar'}`);
       }
@@ -127,40 +189,51 @@ export default function GastosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-4xl mx-auto bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700/50">
+    <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
+      <div className="max-w-4xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
         <div className="mb-6">
           <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
             ← Voltar para o Menu
           </Link>
         </div>
         
-        {/* TÍTULO - 10% Azul */}
         <h1 className="text-2xl font-bold mb-8 text-center text-blue-400 tracking-wide">
           Lançamento de Gastos Mensais
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* CABEÇALHO FIXO - 60% e 30% */}
+          {/* BOTÃO DE UPLOAD DE EXCEL */}
+          <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">📁 Importar Excel (.xlsx / .xls)</h3>
+              <p className="text-xs text-gray-400">O arquivo deve conter as colunas: <strong>categorias | subcategorias | motivo | valor</strong></p>
+            </div>
+            <label className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-blue-900/20 text-center">
+              <span>Selecionar Ficheiro Excel</span>
+              <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
+            </label>
+          </div>
+
+          {/* CABEÇALHO FIXO */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900/50 p-5 rounded-xl border border-gray-700">
             <div>
               <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
               <select value={responsavel} onChange={(e) => setResponsavel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
-                <option value="Davi">Davi</option>
-                <option value="Stella">Stella</option>
+                <option className="bg-gray-800 text-gray-200" value="Davi">Davi</option>
+                <option className="bg-gray-800 text-gray-200" value="Stella">Stella</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Ano</label>
               <select value={ano} onChange={(e) => setAno(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
-                {anosOpcoes.map((a) => <option key={a} value={a}>20{a}</option>)}
+                {anosOpcoes.map((a) => <option className="bg-gray-800 text-gray-200" key={a} value={a}>20{a}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Mês</label>
               <select value={mes} onChange={(e) => setMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
-                {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
+                {mesesOpcoes.map((m) => <option className="bg-gray-800 text-gray-200" key={m} value={m}>{m}</option>)}
               </select>
             </div>
           </div>
@@ -177,17 +250,24 @@ export default function GastosPage() {
 
             {itens.map((item, index) => {
               const isUltima = index === itens.length - 1;
-              const isValido = validarFormatoMoeda(item.valor);
+              const isValidoMoeda = validarFormatoMoeda(item.valor);
+
+              // Validações visuais das seleções
+              const errorCategoria = !item.categoria && item.valor.trim() !== '';
+              const errorSub = !item.subcategoria && item.valor.trim() !== '';
+              const errorMotivo = !item.motivo && item.valor.trim() !== '';
 
               return (
                 <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-gray-900/30 border border-gray-700 p-2.5 rounded-xl items-center hover:bg-gray-800/80 transition-colors">
+                  
                   <div className="col-span-3">
                     <select
                       value={item.categoria}
                       onChange={(e) => atualizarItem(item.id, 'categoria', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className={`w-full bg-gray-800 border rounded-lg p-2 text-sm text-gray-200 outline-none transition-all focus:ring-1 ${errorCategoria ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-900/10' : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'}`}
                     >
-                      {categoriaOpcoes.map((c) => <option key={c} value={c}>{c}</option>)}
+                      <option className="bg-gray-800 text-gray-400" value="">Selecione...</option>
+                      {categoriaOpcoes.map((c) => <option className="bg-gray-800 text-gray-200" key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
 
@@ -195,9 +275,10 @@ export default function GastosPage() {
                     <select
                       value={item.subcategoria}
                       onChange={(e) => atualizarItem(item.id, 'subcategoria', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className={`w-full bg-gray-800 border rounded-lg p-2 text-sm text-gray-200 outline-none transition-all focus:ring-1 ${errorSub ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-900/10' : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'}`}
                     >
-                      {subcategoriaOpcoes.map((s) => <option key={s} value={s}>{s}</option>)}
+                      <option className="bg-gray-800 text-gray-400" value="">Selecione...</option>
+                      {subcategoriaOpcoes.map((s) => <option className="bg-gray-800 text-gray-200" key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
 
@@ -205,9 +286,10 @@ export default function GastosPage() {
                     <select
                       value={item.motivo}
                       onChange={(e) => atualizarItem(item.id, 'motivo', e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                      className={`w-full bg-gray-800 border rounded-lg p-2 text-sm text-gray-200 outline-none transition-all focus:ring-1 ${errorMotivo ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-900/10' : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'}`}
                     >
-                      {motivoOpcoes.map((mo) => <option key={mo} value={mo}>{mo}</option>)}
+                      <option className="bg-gray-800 text-gray-400" value="">Selecione...</option>
+                      {motivoOpcoes.map((mo) => <option className="bg-gray-800 text-gray-200" key={mo} value={mo}>{mo}</option>)}
                     </select>
                   </div>
 
@@ -220,7 +302,7 @@ export default function GastosPage() {
                       onChange={(e) => atualizarItem(item.id, 'valor', e.target.value)}
                       onKeyDown={(e) => handleKeyDownValor(e, isUltima)}
                       className={`w-full bg-gray-800 border rounded-lg p-2 text-sm text-gray-200 outline-none transition-all focus:ring-1 ${
-                        !isValido ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'
+                        !isValidoMoeda ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'
                       }`}
                     />
                   </div>
@@ -250,7 +332,6 @@ export default function GastosPage() {
               ➕ Nova Linha
             </button>
 
-            {/* BOTÃO PRINCIPAL - 10% Azul */}
             <button
               type="submit"
               disabled={enviando}

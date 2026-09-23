@@ -268,7 +268,7 @@ export default function ResumoPage() {
             {visao === 'tabela' && (
               <div className="overflow-x-auto">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
-                  Exibindo {dadosFiltradosTabela.length} de {dadosGastos.length} registro(s).
+                 N° de registro(s): {dadosFiltradosTabela.length}.
                 </p>
                 <table className="w-full text-left border-collapse">
                   <thead>
