@@ -15,6 +15,55 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
+// ============================================================================
+// FUNÇÃO AUXILIAR: REGISTRO DE HISTÓRICO AUTOMÁTICO
+// ============================================================================
+async function registrarHistorico(acao: string, descricao: string, valor: string) {
+  try {
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: 'v4', auth: client as any });
+
+    const dataAtual = new Date();
+    const dataFormatada = dataAtual.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const horaFormatada = dataAtual.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+    const spreadsheetInfo = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const abaExiste = spreadsheetInfo.data.sheets?.some((s) => s.properties?.title === 'HISTORICO');
+
+    if (!abaExiste) {
+      // Cria a aba HISTORICO se não existir
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: 'HISTORICO' } } }],
+        },
+      });
+
+      // Adiciona o cabeçalho
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "'HISTORICO'!A1:E1",
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [['DATA', 'HORA', 'AÇÃO', 'DESCRIÇÃO', 'VALOR']] },
+      });
+    }
+
+    // Registra a nova linha no histórico
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "'HISTORICO'!A2:E",
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: [[dataFormatada, horaFormatada, acao, descricao, valor]],
+      },
+    });
+  } catch (error) {
+    console.error('Erro ao salvar no histórico:', error);
+  }
+}
+// ============================================================================
+
+
 // 1. LER INVESTIMENTOS (Dashboard Completo com Reserva de Emergência e Casamento)
 app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
   try {
@@ -24,12 +73,12 @@ app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
     const response = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: SPREADSHEET_ID,
       ranges: [
-        'Investimentos!A3:W14', // Histórico mensal
-        'Investimentos!B21',     // Davi Futuro Total (B21)
-        'Investimentos!C21',     // Davi Pessoal (C21)
-        'Investimentos!D21',     // Stella Futuro Total (D21)
-        'Investimentos!E21',     // Stella Pessoal (E21)
-        'Investimentos!B23',     // Total Juntos
+        'Investimentos!A3:W14', 
+        'Investimentos!B21',     
+        'Investimentos!C21',     
+        'Investimentos!D21',     
+        'Investimentos!E21',     
+        'Investimentos!B23',     
       ],
     });
 
@@ -41,7 +90,6 @@ app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
     const stellaPessoal = valueRanges[4]?.values?.[0]?.[0] || 'R$ 0,00';
     const totalJuntos = valueRanges[5]?.values?.[0]?.[0] || 'R$ 0,00';
 
-    // Função auxiliar para calcular 1/3 (Reserva) e 2/3 (Casamento)
     const calcularFracoes = (valStr: string) => {
       const num = parseFloat(valStr.toString().replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
       const reserva = num * (1 / 3);
@@ -54,7 +102,6 @@ app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
 
     const daviReserva = calcularFracoes(daviFuturoTotal).reserva;
     const daviCasamento = calcularFracoes(daviFuturoTotal).casamento;
-
     const stellaReserva = calcularFracoes(stellaFuturoTotal).reserva;
     const stellaCasamento = calcularFracoes(stellaFuturoTotal).casamento;
 
@@ -78,7 +125,7 @@ app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
   }
 });
 
-// 2. ESCREVER INVESTIMENTO (Divisão 70/30)
+// 2. ESCREVER INVESTIMENTO (Divisão 70/30) + HISTÓRICO
 app.post('/api/investimento', async (req: Request, res: Response) => {
   try {
     const { ano, mes, responsavel, valor } = req.body;
@@ -119,16 +166,24 @@ app.post('/api/investimento', async (req: Request, res: Response) => {
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [[valorFuturo, valorPessoal]] },
     });
+
+    // Registra a ação no Histórico
+    await registrarHistorico(
+      'INVESTIMENTO',
+      `${responsavel} realizou aporte referente a ${mes}/${ano}`,
+      `R$ ${valor.toFixed(2).replace('.', ',')} (Futuro: R$ ${valorFuturo.toFixed(2)} | Pessoal: R$ ${valorPessoal.toFixed(2)})`
+    );
+
     res.json({ message: 'Investimento registrado!', valorFuturo, valorPessoal });
   } catch (error) {
     res.status(500).send({ error: 'Erro ao registrar investimento.' });
   }
 });
 
-// 2.1. ESCREVER RESGATE DE INVESTIMENTO (Subtração)
+// 2.1. ESCREVER RESGATE DE INVESTIMENTO (Subtração) + HISTÓRICO
 app.post('/api/resgate', async (req: Request, res: Response) => {
   try {
-    const { ano, mes, responsavel, tipo, valor } = req.body; // tipo: 'Futuro' ou 'Pessoal'
+    const { ano, mes, responsavel, tipo, valor } = req.body; 
     const valorResgate = Number(valor);
 
     if (isNaN(valorResgate) || valorResgate <= 0) {
@@ -139,9 +194,6 @@ app.post('/api/resgate', async (req: Request, res: Response) => {
     const linhaMes = meses.indexOf(mes) + 3; 
     if (linhaMes < 3) return res.status(400).send({ error: 'Mês inválido' });
 
-    let colunaAlvo = '';
-
-    // Mapeamento das colunas baseado no Ano, Responsável e Tipo (Futuro vs Pessoal)
     const mapaColunas: Record<number, { Davi: { Futuro: string, Pessoal: string }, Stella: { Futuro: string, Pessoal: string } }> = {
       2025: { Davi: { Futuro: 'B', Pessoal: 'C' }, Stella: { Futuro: 'D', Pessoal: 'E' } },
       2026: { Davi: { Futuro: 'H', Pessoal: 'I' }, Stella: { Futuro: 'J', Pessoal: 'K' } },
@@ -153,14 +205,13 @@ app.post('/api/resgate', async (req: Request, res: Response) => {
     const configAno = mapaColunas[Number(ano)];
     if (!configAno) return res.status(400).send({ error: 'Ano inválido' });
 
-    colunaAlvo = configAno[responsavel as 'Davi' | 'Stella']?.[tipo as 'Futuro' | 'Pessoal'];
-    if (!colunaAlvo) return res.status(400).send({ error: 'Parâmetros de responsável ou tipo inválidos' });
+    const colunaAlvo = configAno[responsavel as 'Davi' | 'Stella']?.[tipo as 'Futuro' | 'Pessoal'];
+    if (!colunaAlvo) return res.status(400).send({ error: 'Parâmetros inválidos' });
 
     const celulaAlvo = `Investimentos!${colunaAlvo}${linhaMes}`;
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client as any });
 
-    // 1. Ler o valor atual da célula na planilha
     const leitura = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: celulaAlvo,
@@ -169,16 +220,21 @@ app.post('/api/resgate', async (req: Request, res: Response) => {
     const valorAtualStr = leitura.data.values?.[0]?.[0] || '0';
     const valorAtualNum = parseFloat(valorAtualStr.toString().replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
 
-    // 2. Subtrair o valor do resgate
     const novoValor = valorAtualNum - valorResgate;
 
-    // 3. Atualizar a planilha com o valor subtraído
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: celulaAlvo,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [[novoValor]] },
     });
+
+    // Registra a ação no Histórico
+    await registrarHistorico(
+      'RESGATE',
+      `${responsavel} resgatou do saldo de ${tipo} referente a ${mes}/${ano}`,
+      `- R$ ${valorResgate.toFixed(2).replace('.', ',')}`
+    );
 
     res.json({ message: 'Resgate registrado com sucesso!', novoValor });
   } catch (error) {
@@ -187,7 +243,7 @@ app.post('/api/resgate', async (req: Request, res: Response) => {
   }
 });
 
-// 3. LER METAS MENSAIS (A5:B12) COM SUPORTE A ANOS DINÂMICOS
+// 3. LER METAS MENSAIS
 app.get('/api/metas/:responsavel/:ano', async (req: Request, res: Response) => {
   try {
     const { responsavel, ano } = req.params;
@@ -207,7 +263,7 @@ app.get('/api/metas/:responsavel/:ano', async (req: Request, res: Response) => {
   }
 });
 
-// 4. LER GASTOS DE UM RESPONSÁVEL POR ANO (A48:E)
+// 4. LER GASTOS
 app.get('/api/gastos/:responsavel/:ano', async (req: Request, res: Response) => {
   try {
     const { responsavel, ano } = req.params; 
@@ -251,10 +307,14 @@ app.get('/api/gastos/:responsavel/:ano', async (req: Request, res: Response) => 
   }
 });
 
-// 5. ESCREVER NOVO GASTO MENSAL COM CRIAÇÃO AUTOMÁTICA DE ABA
+// 5. ESCREVER GASTOS EM LOTE + HISTÓRICO
 app.post('/api/gasto', async (req: Request, res: Response) => {
   try {
-    const { aba, mes, categoria, subcategoria, motivo, valor } = req.body; 
+    const { aba, itens } = req.body; 
+
+    if (!itens || !Array.isArray(itens) || itens.length === 0) {
+      return res.status(400).send({ error: 'Nenhum gasto enviado para salvar.' });
+    }
     
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client as any });
@@ -263,21 +323,13 @@ app.post('/api/gasto', async (req: Request, res: Response) => {
       spreadsheetId: SPREADSHEET_ID,
     });
 
-    const abaExiste = spreadsheetInfo.data.sheets?.some(
-      (s) => s.properties?.title === aba
-    );
+    const abaExiste = spreadsheetInfo.data.sheets?.some((s) => s.properties?.title === aba);
 
     if (!abaExiste) {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId: SPREADSHEET_ID,
         requestBody: {
-          requests: [
-            {
-              addSheet: {
-                properties: { title: aba },
-              },
-            },
-          ],
+          requests: [{ addSheet: { properties: { title: aba } } }],
         },
       });
 
@@ -291,19 +343,40 @@ app.post('/api/gasto', async (req: Request, res: Response) => {
       });
     }
 
+    const linhasParaInserir = itens.map((item: any) => [
+      item.mes,
+      item.categoria,
+      item.subcategoria,
+      item.motivo,
+      item.valor
+    ]);
+
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
       range: `'${aba}'!A48:E`, 
       valueInputOption: 'USER_ENTERED', 
       requestBody: {
-        values: [[mes, categoria, subcategoria, motivo, valor]],
+        values: linhasParaInserir,
       },
     });
 
-    res.json({ message: 'Gasto adicionado com sucesso!' });
+    // Calcula o valor total do lote para o histórico
+    const totalLote = itens.reduce((acc: number, item: any) => {
+      const val = parseFloat(item.valor.replace(/\./g, '').replace(',', '.')) || 0;
+      return acc + val;
+    }, 0);
+
+    // Registra a ação no Histórico
+    await registrarHistorico(
+      'GASTO (LOTE)',
+      `Lançados ${itens.length} gasto(s) na aba "${aba}"`,
+      `R$ ${totalLote.toFixed(2).replace('.', ',')}`
+    );
+
+    res.json({ message: `${itens.length} gasto(s) adicionado(s) com sucesso!` });
   } catch (error) {
     console.error(error);
-    res.status(500).send({ error: 'Erro ao adicionar gasto.' });
+    res.status(500).send({ error: 'Erro ao adicionar gastos.' });
   }
 });
 
