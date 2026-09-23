@@ -151,14 +151,14 @@ export default function InvestimentosPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setInvMensagem(`Investimento registrado! Futuro: R$ ${data.valorFuturo.toFixed(2)} | Pessoal: R$ ${data.valorPessoal.toFixed(2)}`);
+        setInvMensagem(`✅ Investimento registrado! Futuro: R$ ${data.valorFuturo.toFixed(2)} | Pessoal: R$ ${data.valorPessoal.toFixed(2)}`);
         setInvValor('');
         carregarDashboard();
       } else {
-        setInvMensagem(`Erro: ${data.error || 'Erro ao salvar'}`);
+        setInvMensagem(`❌ Erro: ${data.error || 'Erro ao salvar'}`);
       }
     } catch {
-      setInvMensagem('Erro de conexão com o back-end.');
+      setInvMensagem('❌ Erro de conexão com o back-end.');
     }
   };
 
@@ -183,14 +183,14 @@ export default function InvestimentosPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setResMensagem(`Resgate efetuado com sucesso!`);
+        setResMensagem(`✅ Resgate efetuado com sucesso!`);
         setResValor('');
         carregarDashboard();
       } else {
-        setResMensagem(`Erro: ${data.error || 'Erro ao realizar resgate'}`);
+        setResMensagem(`❌ Erro: ${data.error || 'Erro ao realizar resgate'}`);
       }
     } catch {
-      setResMensagem('Erro de conexão com o back-end.');
+      setResMensagem('❌ Erro de conexão com o back-end.');
     }
   };
 
@@ -200,24 +200,28 @@ export default function InvestimentosPage() {
   const totalStellaNum = parseCurrency(totais.stellaFuturo) + parseCurrency(totais.stellaPessoal);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-6xl mx-auto bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+    <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
+      <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
         
         {/* Cabeçalho */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700 pb-4 gap-4">
-          <Link href="/" className="text-sm text-green-400 hover:underline">← Voltar para o Menu</Link>
-          <h1 className="text-2xl font-bold text-green-400">Dashboard de Investimentos</h1>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700/50 pb-6 gap-4">
+          <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
+            ← Voltar para o Menu
+          </Link>
+          <h1 className="text-2xl font-bold text-blue-400 tracking-wide">
+            Dashboard de Investimentos
+          </h1>
           
           <div className="flex gap-3">
             <button 
               onClick={() => { setIsAdicionando(!isAdicionando); setIsResgatando(false); }}
-              className={`px-4 py-2 rounded font-bold transition duration-200 ${isAdicionando ? 'bg-gray-600 hover:bg-gray-500' : 'bg-green-600 hover:bg-green-500'} text-white text-sm`}
+              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isAdicionando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'} text-white text-sm`}
             >
               {isAdicionando ? '✖ Cancelar' : '➕ ADICIONAR'}
             </button>
             <button 
               onClick={() => { setIsResgatando(!isResgatando); setIsAdicionando(false); }}
-              className={`px-4 py-2 rounded font-bold transition duration-200 ${isResgatando ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-600 hover:bg-red-500'} text-white text-sm`}
+              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isResgatando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-red-600 hover:bg-red-500 shadow-red-900/20'} text-white text-sm`}
             >
               {isResgatando ? '✖ Cancelar' : '➖ RESGATAR'}
             </button>
@@ -226,64 +230,68 @@ export default function InvestimentosPage() {
 
         {/* Formulário de Adicionar Investimento */}
         {isAdicionando && (
-          <div className="mb-10 bg-gray-700/30 p-6 rounded-xl border border-gray-600 max-w-xl mx-auto">
-            <h2 className="text-xl font-bold mb-6 text-center text-green-400">Registrar Novo Aporte (70/30)</h2>
-            <form onSubmit={handleInvestimentoSubmit} className="space-y-4">
+          <div className="mb-10 bg-gray-900/40 p-6 md:p-8 rounded-2xl border border-gray-700/50 max-w-xl mx-auto shadow-inner">
+            <h2 className="text-xl font-bold mb-6 text-center text-blue-400 tracking-wide">Registrar Novo Aporte</h2>
+            <form onSubmit={handleInvestimentoSubmit} className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Responsável</label>
-                  <select value={invResponsavel} onChange={(e) => setInvResponsavel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                  <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
+                  <select value={invResponsavel} onChange={(e) => setInvResponsavel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
                     <option value="Davi">Davi</option>
                     <option value="Stella">Stella</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Ano</label>
-                  <input type="number" value={invAno} onChange={(e) => setInvAno(Number(e.target.value))} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required />
+                  <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Ano</label>
+                  <input type="number" value={invAno} onChange={(e) => setInvAno(Number(e.target.value))} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" required />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Mês</label>
-                <select value={invMes} onChange={(e) => setInvMes(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Mês</label>
+                <select value={invMes} onChange={(e) => setInvMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
                   {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Valor Total a Investir (R$)</label>
+                <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Valor Total a Investir (R$)</label>
                 <input 
                   type="number" 
                   step="0.01" 
                   placeholder="Ex: 1000,00" 
                   value={invValor} 
                   onChange={(e) => setInvValor(e.target.value)} 
-                  className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                   required 
                 />
               </div>
-              <button type="submit" className="w-full bg-green-600 hover:bg-green-500 text-white font-bold p-3 rounded transition duration-200 mt-4">
+              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 mt-2">
                 Salvar Investimento
               </button>
             </form>
-            {invMensagem && <p className="mt-4 text-center font-semibold text-sm text-green-300">{invMensagem}</p>}
+            {invMensagem && (
+              <div className={`mt-6 p-4 rounded-xl text-center font-medium text-sm border ${invMensagem.includes('❌') ? 'bg-red-900/20 border-red-500/30 text-red-400' : 'bg-blue-900/20 border-blue-500/30 text-blue-400'}`}>
+                {invMensagem}
+              </div>
+            )}
           </div>
         )}
 
         {/* Formulário de Registrar Resgate */}
         {isResgatando && (
-          <div className="mb-10 bg-gray-700/30 p-6 rounded-xl border border-gray-600 max-w-xl mx-auto">
-            <h2 className="text-xl font-bold mb-6 text-center text-red-400">Registrar Resgate de Investimento</h2>
-            <form onSubmit={handleResgateSubmit} className="space-y-4">
+          <div className="mb-10 bg-gray-900/40 p-6 md:p-8 rounded-2xl border border-gray-700/50 max-w-xl mx-auto shadow-inner">
+            <h2 className="text-xl font-bold mb-6 text-center text-red-400 tracking-wide">Registrar Resgate</h2>
+            <form onSubmit={handleResgateSubmit} className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Responsável</label>
-                  <select value={resResponsavel} onChange={(e) => setResResponsavel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                  <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
+                  <select value={resResponsavel} onChange={(e) => setResResponsavel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
                     <option value="Davi">Davi</option>
                     <option value="Stella">Stella</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Tipo de Resgate</label>
-                  <select value={resTipo} onChange={(e) => setResTipo(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                  <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Tipo de Resgate</label>
+                  <select value={resTipo} onChange={(e) => setResTipo(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
                     <option value="Futuro">Futuro</option>
                     <option value="Pessoal">Pessoal</option>
                   </select>
@@ -292,124 +300,128 @@ export default function InvestimentosPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Ano</label>
-                  <input type="number" value={resAno} onChange={(e) => setResAno(Number(e.target.value))} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required />
+                  <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Ano</label>
+                  <input type="number" value={resAno} onChange={(e) => setResAno(Number(e.target.value))} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all" required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Mês</label>
-                  <select value={resMes} onChange={(e) => setResMes(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                  <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Mês</label>
+                  <select value={resMes} onChange={(e) => setResMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
                     {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Valor do Resgate (R$)</label>
+                <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Valor do Resgate (R$)</label>
                 <input 
                   type="number" 
                   step="0.01" 
-                  placeholder="Ex: 1000,00" 
+                  placeholder="Ex: 500,00" 
                   value={resValor} 
                   onChange={(e) => setResValor(e.target.value)} 
-                  className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                   required 
                 />
               </div>
 
-              <button type="submit" className="w-full bg-red-600 hover:bg-red-400 text-white font-bold p-3 rounded transition duration-200 mt-4">
+              <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-red-900/20 mt-2">
                 Efetuar Resgate
               </button>
             </form>
-            {resMensagem && <p className="mt-4 text-center font-semibold text-sm text-amber-300">{resMensagem}</p>}
+            {resMensagem && (
+              <div className={`mt-6 p-4 rounded-xl text-center font-medium text-sm border ${resMensagem.includes('❌') ? 'bg-red-900/20 border-red-500/30 text-red-400' : 'bg-emerald-900/20 border-emerald-500/30 text-emerald-400'}`}>
+                {resMensagem}
+              </div>
+            )}
           </div>
         )}
 
         {/* Cards de Totais */}
         {!carregando && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {/* TOTAL DAVI */}
-            <div className="bg-gray-700/50 p-6 rounded-xl border border-gray-600 shadow-md flex flex-col justify-between">
+            <div className="bg-gray-900/40 p-6 rounded-2xl border border-gray-700/50 shadow-lg flex flex-col justify-between hover:border-gray-600 transition-colors">
               <div>
-                <h3 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2 text-center">Total Davi</h3>
-                <p className="text-2xl font-bold text-blue-400 text-center mb-4">
+                <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 text-center">Total Davi</h3>
+                <p className="text-2xl font-bold text-blue-400 text-center mb-5">
                   {totalDaviNum > 0 ? formatCurrency(totalDaviNum) : (totais.daviFuturo || 'R$ 0,00')}
                 </p>
               </div>
-              <div className="border-t border-gray-600/80 pt-3 space-y-1 text-xs">
-                {/* Linha do Valor Total de Futuro */}
-                <div className="flex justify-between items-center pb-1 border-b border-gray-600/50">
-                  <span className="text-emerald-400 font-bold">Total Futuro:</span>
+              <div className="border-t border-gray-700/80 pt-4 space-y-2 text-xs">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-700/50">
+                  <span className="text-emerald-400 font-medium">Total Futuro:</span>
                   <span className="font-bold text-emerald-400">{totais.daviFuturo || 'R$ 0,00'}</span>
                 </div>
                 <div className="flex justify-between items-center pl-2 pt-1">
-                  <span className="text-gray-400">└ Reserva de Emergência:</span>
-                  <span className="font-semibold text-emerald-300">{totais.daviReserva || 'R$ 0,00'}</span>
+                  <span className="text-gray-500">└ Reserva:</span>
+                  <span className="font-medium text-emerald-400/80">{totais.daviReserva || 'R$ 0,00'}</span>
                 </div>
-                <div className="flex justify-between items-center pl-2 pb-1 border-b border-gray-600/50">
-                  <span className="text-gray-400">└ Casamento:</span>
-                  <span className="font-semibold text-emerald-300">{totais.daviCasamento || 'R$ 0,00'}</span>
+                <div className="flex justify-between items-center pl-2 pb-2 border-b border-gray-700/50">
+                  <span className="text-gray-500">└ Casamento:</span>
+                  <span className="font-medium text-emerald-400/80">{totais.daviCasamento || 'R$ 0,00'}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1">
-                  <span className="text-amber-400">Pessoal:</span>
-                  <span className="font-semibold text-amber-300">{totais.daviPresente || 'R$ 0,00'}</span>
+                  <span className="text-amber-400/80 font-medium">Pessoal:</span>
+                  <span className="font-bold text-amber-400/90">{totais.daviPresente || 'R$ 0,00'}</span>
                 </div>
               </div>
             </div>
 
             {/* TOTAL STELLA */}
-            <div className="bg-gray-700/50 p-6 rounded-xl border border-gray-600 shadow-md flex flex-col justify-between">
+            <div className="bg-gray-900/40 p-6 rounded-2xl border border-gray-700/50 shadow-lg flex flex-col justify-between hover:border-gray-600 transition-colors">
               <div>
-                <h3 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2 text-center">Total Stella</h3>
-                <p className="text-2xl font-bold text-purple-400 text-center mb-4">
+                <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 text-center">Total Stella</h3>
+                <p className="text-2xl font-bold text-indigo-400 text-center mb-5">
                   {totalStellaNum > 0 ? formatCurrency(totalStellaNum) : (totais.stellaFuturo || 'R$ 0,00')}
                 </p>
               </div>
-              <div className="border-t border-gray-600/80 pt-3 space-y-1 text-xs">
-                {/* Linha do Valor Total de Futuro */}
-                <div className="flex justify-between items-center pb-1 border-b border-gray-600/50">
-                  <span className="text-emerald-400 font-bold">Total Futuro:</span>
+              <div className="border-t border-gray-700/80 pt-4 space-y-2 text-xs">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-700/50">
+                  <span className="text-emerald-400 font-medium">Total Futuro:</span>
                   <span className="font-bold text-emerald-400">{totais.stellaFuturo || 'R$ 0,00'}</span>
                 </div>
                 <div className="flex justify-between items-center pl-2 pt-1">
-                  <span className="text-gray-400">└ Reserva de Emergência:</span>
-                  <span className="font-semibold text-emerald-300">{totais.stellaReserva || 'R$ 0,00'}</span>
+                  <span className="text-gray-500">└ Reserva:</span>
+                  <span className="font-medium text-emerald-400/80">{totais.stellaReserva || 'R$ 0,00'}</span>
                 </div>
-                <div className="flex justify-between items-center pl-2 pb-1 border-b border-gray-600/50">
-                  <span className="text-gray-400">└ Casamento:</span>
-                  <span className="font-semibold text-emerald-300">{totais.stellaCasamento || 'R$ 0,00'}</span>
+                <div className="flex justify-between items-center pl-2 pb-2 border-b border-gray-700/50">
+                  <span className="text-gray-500">└ Casamento:</span>
+                  <span className="font-medium text-emerald-400/80">{totais.stellaCasamento || 'R$ 0,00'}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1">
-                  <span className="text-amber-400">Pessoal:</span>
-                  <span className="font-semibold text-amber-300">{totais.stellaPessoal || 'R$ 0,00'}</span>
+                  <span className="text-amber-400/80 font-medium">Pessoal:</span>
+                  <span className="font-bold text-amber-400/90">{totais.stellaPessoal || 'R$ 0,00'}</span>
                 </div>
               </div>
             </div>
 
-            {/* VALOR TOTAL JUNTOS */}
-            <div className="bg-gray-700/50 p-6 rounded-xl border border-green-600 text-center shadow-md flex flex-col justify-center">
-              <h3 className="text-green-400 text-sm font-bold uppercase tracking-wider mb-2">Valor Total Juntos</h3>
-              <p className="text-3xl font-bold text-white">{totais.totalJuntos || 'R$ 0,00'}</p>
+            {/* VALOR TOTAL JUNTOS (Destaque Principal) */}
+            <div className="bg-gradient-to-br from-blue-900/40 to-gray-900/40 p-6 rounded-2xl border border-blue-500/30 text-center shadow-lg flex flex-col justify-center transform transition-transform hover:scale-[1.02]">
+              <h3 className="text-blue-400 text-sm font-bold uppercase tracking-wider mb-3">Valor Total Conjunto</h3>
+              <p className="text-4xl font-bold text-white tracking-tight">{totais.totalJuntos || 'R$ 0,00'}</p>
             </div>
           </div>
         )}
 
         {carregando ? (
-          <p className="text-center text-gray-400">Carregando evolução patrimonial...</p>
+          <div className="flex justify-center items-center py-20">
+            <p className="text-gray-400 font-medium animate-pulse">A carregar evolução patrimonial...</p>
+          </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-8">
             {/* Gráfico Davi */}
-            <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
-              <h2 className="text-lg font-bold text-center mb-4 text-blue-400">Evolução do Patrimônio - Davi</h2>
+            <div className="bg-gray-900/30 p-6 md:p-8 rounded-2xl border border-gray-700/50">
+              <h2 className="text-lg font-bold text-center mb-6 text-gray-200 tracking-wide">Evolução do Património - Davi</h2>
               <div className="w-full h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dadosGrafico}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="periodo" stroke="#9CA3AF" tick={{fontSize: 12}} />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }} />
-                    <Legend />
-                    <Line type="monotone" dataKey="DaviFuturo" name="Futuro (Coluna B, H...)" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="DaviPessoal" name="Pessoal/Presente (Coluna C, I...)" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <XAxis dataKey="periodo" stroke="#9CA3AF" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
+                    <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }} />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    <Line type="monotone" dataKey="DaviFuturo" name="Futuro" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="DaviPessoal" name="Pessoal" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     <Line type="monotone" dataKey="DaviTotal" name="Total Davi" stroke="#3B82F6" strokeWidth={2} strokeDasharray="5 5" />
                   </LineChart>
                 </ResponsiveContainer>
@@ -417,36 +429,36 @@ export default function InvestimentosPage() {
             </div>
 
             {/* Gráfico Stella */}
-            <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
-              <h2 className="text-lg font-bold text-center mb-4 text-purple-400">Evolução do Patrimônio - Stella</h2>
+            <div className="bg-gray-900/30 p-6 md:p-8 rounded-2xl border border-gray-700/50">
+              <h2 className="text-lg font-bold text-center mb-6 text-gray-200 tracking-wide">Evolução do Património - Stella</h2>
               <div className="w-full h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dadosGrafico}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="periodo" stroke="#9CA3AF" tick={{fontSize: 12}} />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }} />
-                    <Legend />
-                    <Line type="monotone" dataKey="StellaFuturo" name="Futuro (Coluna D, J...)" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="StellaPessoal" name="Pessoal (Coluna E, K...)" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="StellaTotal" name="Total Stella" stroke="#A855F7" strokeWidth={2} strokeDasharray="5 5" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <XAxis dataKey="periodo" stroke="#9CA3AF" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
+                    <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }} />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    <Line type="monotone" dataKey="StellaFuturo" name="Futuro" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="StellaPessoal" name="Pessoal" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="StellaTotal" name="Total Stella" stroke="#754fffff" strokeWidth={2} strokeDasharray="5 5" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             {/* Gráfico Juntos */}
-            <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
-              <h2 className="text-lg font-bold text-center mb-4 text-white">Evolução Acumulada - Juntos</h2>
+            <div className="bg-gray-900/30 p-6 md:p-8 rounded-2xl border border-gray-700/50">
+              <h2 className="text-xl font-bold text-center mb-6 text-blue-400 tracking-wide">Evolução Acumulada - Casal</h2>
               <div className="w-full h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dadosGrafico}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="periodo" stroke="#9CA3AF" tick={{fontSize: 12}} />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }} />
-                    <Legend />
-                    <Line type="monotone" dataKey="TotalConjunto" name="Patrimônio Total do Casal" stroke="#FFFFFF" strokeWidth={4} dot={{ r: 5 }} activeDot={{ r: 7 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                    <XAxis dataKey="periodo" stroke="#9CA3AF" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
+                    <Tooltip formatter={tooltipFormatter} contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }} />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    <Line type="monotone" dataKey="TotalConjunto" name="Património Total" stroke="#60A5FA" strokeWidth={4} dot={{ r: 5 }} activeDot={{ r: 8 }} />
                     <Line type="monotone" dataKey="JuntosFuturo" name="Total Futuro Conjunto" stroke="#10B981" strokeWidth={2} strokeDasharray="5 5" />
                     <Line type="monotone" dataKey="JuntosPessoal" name="Total Pessoal Conjunto" stroke="#F59E0B" strokeWidth={2} strokeDasharray="5 5" />
                   </LineChart>
