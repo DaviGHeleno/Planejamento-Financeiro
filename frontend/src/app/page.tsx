@@ -12,24 +12,25 @@ export default function Home() {
         <div className="flex flex-col gap-4">
           <Link 
             href="/gastos"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-4 rounded-xl transition duration-200 shadow-md text-center block"
+            className="w-full bg-blue-600 hover:bg-blue-900 text-white font-bold p-4 rounded-xl transition duration-200 shadow-md text-center block"
           >
             📊 Adicionar Gastos do Mês
           </Link>
 
           <Link 
-            href="/investimentos"
-            className="w-full bg-green-600 hover:bg-green-500 text-white font-bold p-4 rounded-xl transition duration-200 shadow-md text-center block"
+            href="/resumo"
+            className="w-full bg-purple-600 hover:bg-purple-900 text-white font-bold p-4 rounded-xl transition duration-200 shadow-md text-center block"
           >
-            💰 Adicionar Investimentos
+            📈 Visualizar Gastos
           </Link>
 
           <Link 
-            href="/resumo"
-            className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold p-4 rounded-xl transition duration-200 shadow-md text-center block"
+            href="/investimentos"
+            className="w-full bg-green-600 hover:bg-green-900 text-white font-bold p-4 rounded-xl transition duration-200 shadow-md text-center block"
           >
-            📈 Visualizar Dados e Resumo
+            💰 Investimentos
           </Link>
+
         </div>
       </div>
     </div>

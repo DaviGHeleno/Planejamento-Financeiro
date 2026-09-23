@@ -250,7 +250,15 @@ export default function InvestimentosPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Valor Total a Investir (R$)</label>
-                <input type="number" step="0.01" placeholder="Ex: 1000" value={invValor} onChange={(e) => setInvValor(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required />
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  placeholder="Ex: 1000,00" 
+                  value={invValor} 
+                  onChange={(e) => setInvValor(e.target.value)} 
+                  className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                  required 
+                />
               </div>
               <button type="submit" className="w-full bg-green-600 hover:bg-green-500 text-white font-bold p-3 rounded transition duration-200 mt-4">
                 Salvar Investimento
@@ -297,7 +305,15 @@ export default function InvestimentosPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Valor do Resgate (R$)</label>
-                <input type="number" step="0.01" placeholder="Ex: 500" value={resValor} onChange={(e) => setResValor(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required />
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  placeholder="Ex: 1000,00" 
+                  value={resValor} 
+                  onChange={(e) => setResValor(e.target.value)} 
+                  className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                  required 
+                />
               </div>
 
               <button type="submit" className="w-full bg-red-600 hover:bg-red-400 text-white font-bold p-3 rounded transition duration-200 mt-4">
