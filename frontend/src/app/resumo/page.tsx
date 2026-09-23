@@ -17,7 +17,6 @@ export default function ResumoPage() {
 
   const [filtroPeriodoGrafico, setFiltroPeriodoGrafico] = useState('TODOS');
 
-  // Filtros alterados para seleção limpa
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('');
@@ -26,9 +25,8 @@ export default function ResumoPage() {
   const anosOpcoes = ['26', '27', '28', '29', '30'];
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
-  // Listas de opções para os menus de seleção dos filtros da tabela
-  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'CARRO NOVO'];
-  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras', 'presentes', 'whey'];
+  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'CARRO NOVO', 'EUROTRIP'];
+  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'gym', 'esportes', 'mimos', 'compras', 'flock', 'presentes', 'whey'];
   const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'DAVI', 'PRESENTE'];
 
   const carregarDados = async () => {
@@ -61,12 +59,11 @@ export default function ResumoPage() {
 
   const parseValor = (val: string) => {
     if (!val) return 0;
-    const limpo = val.toString().replace('R$', '').trim().replace('.', '').replace(',', '.');
+    const limpo = val.toString().replace('R$', '').trim().replace(/\./g, '').replace(',', '.');
     const num = parseFloat(limpo);
     return isNaN(num) ? 0 : num;
   };
 
-  // Lógica atualizada para corresponder à seleção exata ou vazia nos filtros
   const dadosFiltradosTabela = dadosGastos.filter((gasto) => {
     const matchMes = !filtroMes || gasto.mes.trim().toUpperCase() === filtroMes.toUpperCase();
     const matchCat = !filtroCategoria || gasto.categoria.trim().toLowerCase() === filtroCategoria.toLowerCase();
@@ -74,6 +71,11 @@ export default function ResumoPage() {
     const matchMot = !filtroMotivo || gasto.motivo.trim().toUpperCase() === filtroMotivo.toUpperCase();
     return matchMes && matchCat && matchSub && matchMot;
   });
+
+  // Cálculo dinâmico do somatório total dos registos filtrados
+  const valorTotalFiltrado = dadosFiltradosTabela.reduce((acc, gasto) => {
+    return acc + parseValor(gasto.valor);
+  }, 0);
 
   const dadosParaGraficos = dadosGastos.filter((gasto) => {
     if (filtroPeriodoGrafico === 'TODOS') return true;
@@ -269,35 +271,37 @@ export default function ResumoPage() {
                       <th className="p-3">Valor (R$)</th>
                     </tr>
                     <tr className="bg-gray-700/40 border-b border-gray-700">
-                      {/* Filtro por Mês (Select) */}
                       <th className="p-2">
                         <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
                           <option value="">Todos os Meses</option>
                           {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
                         </select>
                       </th>
-                      {/* Filtro por Categoria (Select) */}
                       <th className="p-2">
                         <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
                           <option value="">Todas as Categorias</option>
                           {categoriaOpcoes.map((c) => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </th>
-                      {/* Filtro por Sub-categoria (Select) */}
                       <th className="p-2">
                         <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
                           <option value="">Todas as Sub-categorias</option>
                           {subcategoriaOpcoes.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </th>
-                      {/* Filtro por Motivo (Select) */}
                       <th className="p-2">
                         <select value={filtroMotivo} onChange={(e) => setFiltroMotivo(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
                           <option value="">Todos os Motivos</option>
                           {motivoOpcoes.map((mo) => <option key={mo} value={mo}>{mo}</option>)}
                         </select>
                       </th>
-                      <th className="p-2"></th>
+                      
+                      {/* Exibição do Somatório Total perfeitamente alinhado com a coluna de valores */}
+                      <th className="p-2 text-left">
+                        <span className="bg-green-900/60 border border-green-500 text-green-300 font-bold px-2 py-1 rounded text-xs inline-block w-full text-center">
+                          Total: {valorTotalFiltrado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
