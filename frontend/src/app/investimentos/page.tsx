@@ -215,13 +215,13 @@ export default function InvestimentosPage() {
           <div className="flex gap-3">
             <button 
               onClick={() => { setIsAdicionando(!isAdicionando); setIsResgatando(false); }}
-              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isAdicionando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'} text-white text-sm`}
+              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isAdicionando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-blue-600 hover:bg-blue-800 shadow-blue-900/20'} text-white text-sm`}
             >
               {isAdicionando ? '✖ Cancelar' : '➕ ADICIONAR'}
             </button>
             <button 
               onClick={() => { setIsResgatando(!isResgatando); setIsAdicionando(false); }}
-              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isResgatando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-red-600 hover:bg-red-500 shadow-red-900/20'} text-white text-sm`}
+              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isResgatando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-sky-500 hover:bg-cyan-600 shadow-red-900/20'} text-white text-sm`}
             >
               {isResgatando ? '✖ Cancelar' : '➖ RESGATAR'}
             </button>
@@ -279,7 +279,7 @@ export default function InvestimentosPage() {
         {/* Formulário de Registrar Resgate */}
         {isResgatando && (
           <div className="mb-10 bg-gray-900/40 p-6 md:p-8 rounded-2xl border border-gray-700/50 max-w-xl mx-auto shadow-inner">
-            <h2 className="text-xl font-bold mb-6 text-center text-red-400 tracking-wide">Registrar Resgate</h2>
+            <h2 className="text-xl font-bold mb-6 text-center text-sky-300 tracking-wide">Registrar Resgate</h2>
             <form onSubmit={handleResgateSubmit} className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -324,7 +324,7 @@ export default function InvestimentosPage() {
                 />
               </div>
 
-              <button type="submit" className="w-full bg-red-600 hover:bg-red-500 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-red-900/20 mt-2">
+              <button type="submit" className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-sky-900/20 mt-2">
                 Efetuar Resgate
               </button>
             </form>
