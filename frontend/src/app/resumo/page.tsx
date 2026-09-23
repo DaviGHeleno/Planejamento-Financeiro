@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
 
-const CORES_PIZZA = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#A855F7'];
+const CORES_PIZZA = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C', '#818CF8', '#C084FC'];
 
 export default function ResumoPage() {
   const [responsavel, setResponsavel] = useState('Davi');
@@ -72,7 +72,6 @@ export default function ResumoPage() {
     return matchMes && matchCat && matchSub && matchMot;
   });
 
-  // Cálculo dinâmico do somatório total dos registos filtrados
   const valorTotalFiltrado = dadosFiltradosTabela.reduce((acc, gasto) => {
     return acc + parseValor(gasto.valor);
   }, 0);
@@ -196,21 +195,25 @@ export default function ResumoPage() {
   }).filter(pizza => pizza.total > 0);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-6xl mx-auto bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-        <div className="mb-4">
-          <Link href="/" className="text-sm text-purple-400 hover:underline">← Voltar para o Menu</Link>
+    <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
+      <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
+        <div className="mb-6">
+          <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
+            ← Voltar para o Menu
+          </Link>
         </div>
         
-        <h1 className="text-2xl font-bold mb-6 text-center text-purple-400">Consulta de Gastos e Relatórios</h1>
+        <h1 className="text-2xl font-bold mb-8 text-center text-blue-400 tracking-wide">
+          Consulta de Gastos e Relatórios
+        </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-6 bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-8 bg-gray-900/40 p-5 rounded-xl border border-gray-700/50 shadow-inner">
           <div>
-            <label className="block text-sm font-medium mb-1">Responsável</label>
+            <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
             <select 
               value={responsavel} 
               onChange={(e) => setResponsavel(e.target.value)} 
-              className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             >
               <option value="Davi">Davi</option>
               <option value="Stella">Stella</option>
@@ -218,11 +221,11 @@ export default function ResumoPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Ano</label>
+            <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Ano</label>
             <select 
               value={ano} 
               onChange={(e) => setAno(e.target.value)} 
-              className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             >
               {anosOpcoes.map((a) => (
                 <option key={a} value={a}>20{a}</option>
@@ -233,26 +236,30 @@ export default function ResumoPage() {
           <button 
             onClick={carregarDados}
             disabled={carregando}
-            className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-2 rounded transition duration-200 h-10"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 h-11 disabled:opacity-50"
           >
             {carregando ? 'Carregando...' : 'Carregar Dados do Ano'}
           </button>
         </div>
 
-        {mensagem && <p className="text-center text-yellow-400 mb-4">{mensagem}</p>}
+        {mensagem && (
+          <div className="mb-6 p-4 rounded-xl text-center font-medium text-sm bg-yellow-900/20 border border-yellow-500/30 text-yellow-400">
+            {mensagem}
+          </div>
+        )}
 
         {dadosGastos.length > 0 && (
           <>
-            <div className="flex justify-center gap-4 mb-6">
+            <div className="flex justify-center gap-3 mb-8">
               <button 
                 onClick={() => setVisao('tabela')}
-                className={`px-4 py-2 rounded font-bold transition ${visao === 'tabela' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'tabela' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
               >
                 📋 Tabela de Gastos
               </button>
               <button 
                 onClick={() => setVisao('graficos')}
-                className={`px-4 py-2 rounded font-bold transition ${visao === 'graficos' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'graficos' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
               >
                 📊 Painel de Gráficos & Planejado
               </button>
@@ -260,45 +267,46 @@ export default function ResumoPage() {
 
             {visao === 'tabela' && (
               <div className="overflow-x-auto">
-                <p className="text-sm text-gray-400 mb-3">Exibindo {dadosFiltradosTabela.length} de {dadosGastos.length} registro(s).</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
+                  Exibindo {dadosFiltradosTabela.length} de {dadosGastos.length} registro(s).
+                </p>
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-700 text-purple-300">
+                    <tr className="border-b border-gray-700/80 text-blue-400 text-xs font-bold uppercase tracking-wider">
                       <th className="p-3">Mês</th>
                       <th className="p-3">Categoria</th>
                       <th className="p-3">Sub-categoria</th>
                       <th className="p-3">Motivo</th>
                       <th className="p-3">Valor (R$)</th>
                     </tr>
-                    <tr className="bg-gray-700/40 border-b border-gray-700">
+                    <tr className="bg-gray-900/50 border-b border-gray-700/80">
                       <th className="p-2">
-                        <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                        <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
                           <option value="">Todos os Meses</option>
                           {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
                         </select>
                       </th>
                       <th className="p-2">
-                        <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                        <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
                           <option value="">Todas as Categorias</option>
                           {categoriaOpcoes.map((c) => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </th>
                       <th className="p-2">
-                        <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                        <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
                           <option value="">Todas as Sub-categorias</option>
                           {subcategoriaOpcoes.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </th>
                       <th className="p-2">
-                        <select value={filtroMotivo} onChange={(e) => setFiltroMotivo(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                        <select value={filtroMotivo} onChange={(e) => setFiltroMotivo(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
                           <option value="">Todos os Motivos</option>
                           {motivoOpcoes.map((mo) => <option key={mo} value={mo}>{mo}</option>)}
                         </select>
                       </th>
                       
-                      {/* Exibição do Somatório Total perfeitamente alinhado com a coluna de valores */}
                       <th className="p-2 text-left">
-                        <span className="bg-green-900/60 border border-green-500 text-green-300 font-bold px-2 py-1 rounded text-xs inline-block w-full text-center">
+                        <span className="bg-blue-900/30 border border-blue-500/40 text-blue-300 font-bold px-3 py-1.5 rounded-lg text-xs inline-block w-full text-center shadow-sm">
                           Total: {valorTotalFiltrado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
                       </th>
@@ -306,12 +314,12 @@ export default function ResumoPage() {
                   </thead>
                   <tbody>
                     {dadosFiltradosTabela.map((gasto, index) => (
-                      <tr key={index} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                        <td className="p-3">{gasto.mes}</td>
-                        <td className="p-3">{gasto.categoria}</td>
-                        <td className="p-3">{gasto.subcategoria}</td>
-                        <td className="p-3">{gasto.motivo}</td>
-                        <td className="p-3 font-semibold text-green-400">{gasto.valor}</td>
+                      <tr key={index} className="border-b border-gray-700/40 hover:bg-gray-700/20 transition-colors">
+                        <td className="p-3 text-sm text-gray-300">{gasto.mes}</td>
+                        <td className="p-3 text-sm text-gray-300">{gasto.categoria}</td>
+                        <td className="p-3 text-sm text-gray-300">{gasto.subcategoria}</td>
+                        <td className="p-3 text-sm text-gray-300">{gasto.motivo}</td>
+                        <td className="p-3 text-sm font-semibold text-red-300">{gasto.valor}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -321,12 +329,12 @@ export default function ResumoPage() {
 
             {visao === 'graficos' && (
               <div className="space-y-8">
-                <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-700 flex flex-col md:flex-row items-center justify-between gap-4">
-                  <span className="font-medium text-gray-300">Filtrar Período dos Gráficos:</span>
+                <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Filtrar Período dos Gráficos:</span>
                   <select 
                     value={filtroPeriodoGrafico} 
                     onChange={(e) => setFiltroPeriodoGrafico(e.target.value)}
-                    className="bg-gray-700 border border-gray-600 rounded p-2 text-white w-full md:w-64"
+                    className="bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 text-sm outline-none focus:border-blue-500 w-full md:w-64"
                   >
                     <option value="TODOS">📅 Ano Todo (Acumulado)</option>
                     {mesesOpcoes.map((m) => (
@@ -335,32 +343,25 @@ export default function ResumoPage() {
                   </select>
                 </div>
 
-                <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
-                  <h2 className="text-lg font-bold text-center mb-2 text-green-400">
+                <div className="bg-gray-900/30 p-6 md:p-8 rounded-2xl border border-gray-700/50">
+                  <h2 className="text-lg font-bold text-center mb-2 text-gray-200 tracking-wide">
                     Gastos por Categoria: Realizado vs Planejado ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
                   </h2>
-                  <p className="text-xs text-center text-gray-400 mb-4">Compara os gastos lançados com as metas definidas em A5:B12</p>
+                  <p className="text-xs text-center text-gray-400 mb-6">Compara os gastos lançados com as metas definidas</p>
                   
                   <div className="w-full h-96">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={dadosGraficoCategorias}>
-                        <defs>
-                          <linearGradient id="splitColor" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="50%" stopColor="#10B981" />
-                            <stop offset="50%" stopColor="#EF4444" />
-                          </linearGradient>
-                        </defs>
-                        
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="categoria" stroke="#9CA3AF" interval={0} angle={-15} textAnchor="end" height={60} tick={{fontSize: 11}} />
-                        <YAxis stroke="#9CA3AF" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <XAxis dataKey="categoria" stroke="#9CA3AF" interval={0} angle={-15} textAnchor="end" height={60} tick={{fontSize: 11}} axisLine={false} tickLine={false} />
+                        <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
                         <Tooltip 
                           formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
-                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }} 
+                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }} 
                         />
-                        <Legend />
+                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
                         
-                        <Bar dataKey="Realizado" fill="url(#splitColor)" radius={[4, 4, 0, 0]}>
+                        <Bar dataKey="Realizado" fill="#10B981" radius={[4, 4, 0, 0]}>
                           {dadosGraficoCategorias.map((entry, index) => (
                             <Cell 
                               key={`cell-${index}`} 
@@ -369,45 +370,45 @@ export default function ResumoPage() {
                           ))}
                         </Bar>
 
-                        <Bar dataKey="Planejado" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Planejado" fill="#60A5FA" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
-                  <h2 className="text-lg font-bold text-center mb-4 text-indigo-400">
+                <div className="bg-gray-900/30 p-6 md:p-8 rounded-2xl border border-gray-700/50">
+                  <h2 className="text-lg font-bold text-center mb-6 text-gray-200 tracking-wide">
                     Gastos Totais por Sub-categoria ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
                   </h2>
                   <div className="w-full h-96">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={dadosGraficoSubcategorias}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="subcategoria" stroke="#9CA3AF" interval={0} angle={-45} textAnchor="end" height={80} tick={{fontSize: 10}} />
-                        <YAxis stroke="#9CA3AF" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <XAxis dataKey="subcategoria" stroke="#9CA3AF" interval={0} angle={-45} textAnchor="end" height={80} tick={{fontSize: 10}} axisLine={false} tickLine={false} />
+                        <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
                         <Tooltip 
                           formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
-                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }} 
+                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }} 
                         />
-                        <Legend verticalAlign="top" height={36}/>
-                        <Bar dataKey="Total" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                        <Bar dataKey="Total" fill="#818CF8" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
                 {dadosPizzasPorCategoria.length > 0 && (
-                  <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
-                    <h2 className="text-lg font-bold text-center mb-2 text-pink-400">
+                  <div className="bg-gray-900/30 p-6 md:p-8 rounded-2xl border border-gray-700/50">
+                    <h2 className="text-lg font-bold text-center mb-2 text-gray-200 tracking-wide">
                       Distribuição Interna das Categorias ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
                     </h2>
-                    <p className="text-xs text-center text-gray-400 mb-8">Como o valor de cada categoria foi dividido entre suas sub-categorias</p>
+                    <p className="text-xs text-center text-gray-400 mb-8">Valor de cada categoria dividido entre suas sub-categorias</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {dadosPizzasPorCategoria.map((pizza, index) => (
-                        <div key={index} className="bg-gray-800/80 p-4 rounded-xl border border-gray-600 flex flex-col items-center">
-                          <h3 className="text-md font-bold text-gray-200 mb-1">{pizza.categoria}</h3>
-                          <p className="text-sm font-semibold text-green-400 mb-2">
+                        <div key={index} className="bg-gray-800/60 p-5 rounded-2xl border border-gray-700/50 flex flex-col items-center shadow-md">
+                          <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300 mb-1">{pizza.categoria}</h3>
+                          <p className="text-sm font-semibold text-emerald-400 mb-4">
                             Total: R$ {pizza.total.toFixed(2).replace('.', ',')}
                           </p>
                           
@@ -420,7 +421,7 @@ export default function ResumoPage() {
                                   nameKey="name"
                                   cx="50%"
                                   cy="50%"
-                                  outerRadius={70}
+                                  outerRadius={75}
                                   label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
                                 >
                                   {pizza.dados.map((entry, idx) => (
@@ -429,9 +430,9 @@ export default function ResumoPage() {
                                 </Pie>
                                 <Tooltip 
                                   formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
-                                  contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF' }}
+                                  contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }}
                                 />
-                                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }}/>
+                                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }}/>
                               </PieChart>
                             </ResponsiveContainer>
                           </div>
