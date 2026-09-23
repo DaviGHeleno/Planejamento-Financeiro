@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-// Adicionamos as importações do PieChart e Pie do Recharts
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
 
-// Paleta de cores para as fatias da pizza
 const CORES_PIZZA = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#A855F7'];
 
 export default function ResumoPage() {
@@ -19,6 +17,7 @@ export default function ResumoPage() {
 
   const [filtroPeriodoGrafico, setFiltroPeriodoGrafico] = useState('TODOS');
 
+  // Filtros alterados para seleção limpa
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState('');
@@ -26,6 +25,11 @@ export default function ResumoPage() {
 
   const anosOpcoes = ['26', '27', '28', '29', '30'];
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+
+  // Listas de opções para os menus de seleção dos filtros da tabela
+  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'CARRO NOVO'];
+  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras', 'presentes', 'whey'];
+  const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'DAVI', 'PRESENTE'];
 
   const carregarDados = async () => {
     setCarregando(true);
@@ -62,11 +66,12 @@ export default function ResumoPage() {
     return isNaN(num) ? 0 : num;
   };
 
+  // Lógica atualizada para corresponder à seleção exata ou vazia nos filtros
   const dadosFiltradosTabela = dadosGastos.filter((gasto) => {
-    const matchMes = gasto.mes.toLowerCase().includes(filtroMes.toLowerCase());
-    const matchCat = gasto.categoria.toLowerCase().includes(filtroCategoria.toLowerCase());
-    const matchSub = gasto.subcategoria.toLowerCase().includes(filtroSubcategoria.toLowerCase());
-    const matchMot = gasto.motivo.toLowerCase().includes(filtroMotivo.toLowerCase());
+    const matchMes = !filtroMes || gasto.mes.trim().toUpperCase() === filtroMes.toUpperCase();
+    const matchCat = !filtroCategoria || gasto.categoria.trim().toLowerCase() === filtroCategoria.toLowerCase();
+    const matchSub = !filtroSubcategoria || gasto.subcategoria.trim().toLowerCase() === filtroSubcategoria.toLowerCase();
+    const matchMot = !filtroMotivo || gasto.motivo.trim().toUpperCase() === filtroMotivo.toUpperCase();
     return matchMes && matchCat && matchSub && matchMot;
   });
 
@@ -159,14 +164,11 @@ export default function ResumoPage() {
     Total: Number((dadosSubMap[sub] || 0).toFixed(2)),
   }));
 
-  // === NOVO: PREPARAÇÃO DOS DADOS PARA OS GRÁFICOS DE PIZZA ===
   const dadosPizzasPorCategoria = ordemCategorias.map((cat) => {
-    // 1. Pega apenas os gastos dessa categoria específica
     const gastosDaCategoria = dadosParaGraficos.filter(
       (gasto) => normalizarCategoria(gasto.categoria || '') === cat
     );
 
-    // 2. Agrupa esses gastos por subcategoria
     const subMapDaCategoria = gastosDaCategoria.reduce((acc: any, item: any) => {
       const sub = normalizarSubcategoria(item.subcategoria || 'Outros');
       const val = parseValor(item.valor);
@@ -175,15 +177,13 @@ export default function ResumoPage() {
       return acc;
     }, {});
 
-    // 3. Converte para o formato de array esperado pelo PieChart
     const dataPizza = Object.keys(subMapDaCategoria)
       .map((sub) => ({
         name: sub,
         value: Number(subMapDaCategoria[sub].toFixed(2)),
       }))
-      .filter((item) => item.value > 0); // Remove o que for zero
+      .filter((item) => item.value > 0);
 
-    // 4. Calcula o total gasto na categoria
     const totalDaCategoria = dataPizza.reduce((sum, item) => sum + item.value, 0);
 
     return {
@@ -191,7 +191,7 @@ export default function ResumoPage() {
       total: totalDaCategoria,
       dados: dataPizza,
     };
-  }).filter(pizza => pizza.total > 0); // Exibe apenas pizzas que têm algum gasto no período
+  }).filter(pizza => pizza.total > 0);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -269,17 +269,33 @@ export default function ResumoPage() {
                       <th className="p-3">Valor (R$)</th>
                     </tr>
                     <tr className="bg-gray-700/40 border-b border-gray-700">
+                      {/* Filtro por Mês (Select) */}
                       <th className="p-2">
-                        <input type="text" placeholder="Filtrar mês..." value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white" />
+                        <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                          <option value="">Todos os Meses</option>
+                          {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
+                        </select>
                       </th>
+                      {/* Filtro por Categoria (Select) */}
                       <th className="p-2">
-                        <input type="text" placeholder="Filtrar categoria..." value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white" />
+                        <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                          <option value="">Todas as Categorias</option>
+                          {categoriaOpcoes.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
                       </th>
+                      {/* Filtro por Sub-categoria (Select) */}
                       <th className="p-2">
-                        <input type="text" placeholder="Filtrar sub..." value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white" />
+                        <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                          <option value="">Todas as Sub-categorias</option>
+                          {subcategoriaOpcoes.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
                       </th>
+                      {/* Filtro por Motivo (Select) */}
                       <th className="p-2">
-                        <input type="text" placeholder="Filtrar motivo..." value={filtroMotivo} onChange={(e) => setFiltroMotivo(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white" />
+                        <select value={filtroMotivo} onChange={(e) => setFiltroMotivo(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white">
+                          <option value="">Todos os Motivos</option>
+                          {motivoOpcoes.map((mo) => <option key={mo} value={mo}>{mo}</option>)}
+                        </select>
                       </th>
                       <th className="p-2"></th>
                     </tr>
@@ -315,7 +331,6 @@ export default function ResumoPage() {
                   </select>
                 </div>
 
-                {/* GRÁFICO 1: CATEGORIAS (REALIZADO x PLANEJADO) */}
                 <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
                   <h2 className="text-lg font-bold text-center mb-2 text-green-400">
                     Gastos por Categoria: Realizado vs Planejado ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
@@ -356,7 +371,6 @@ export default function ResumoPage() {
                   </div>
                 </div>
 
-                {/* GRÁFICO 2: SUB-CATEGORIAS TOTAL */}
                 <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
                   <h2 className="text-lg font-bold text-center mb-4 text-indigo-400">
                     Gastos Totais por Sub-categoria ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
@@ -378,7 +392,6 @@ export default function ResumoPage() {
                   </div>
                 </div>
 
-                {/* GRÁFICO 3: PIZZAS DETALHADAS POR CATEGORIA */}
                 {dadosPizzasPorCategoria.length > 0 && (
                   <div className="bg-gray-700/20 p-6 rounded-xl border border-gray-700">
                     <h2 className="text-lg font-bold text-center mb-2 text-pink-400">
