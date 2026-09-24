@@ -380,18 +380,47 @@ app.post('/api/gasto', async (req: Request, res: Response) => {
   }
 });
 
-// 6. LER OBJETIVOS
+// 6. LER OBJETIVOS (Bucket List / Lista de Sonhos)
 app.get('/api/objetivos', async (req: Request, res: Response) => {
   try {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client as any });
+    
+    // Lê as colunas A e B a partir da linha 2 (ignorando o título da A1:B1)
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'OBJETIVOS!A1:C20', 
+      range: 'OBJETIVOS!A2:B', 
     });
-    res.json({ data: response.data.values });
+
+    res.json({ data: response.data.values || [] });
   } catch (error) {
+    console.error(error);
     res.status(500).send({ error: 'Erro ao ler Objetivos.' });
+  }
+});
+// 6.1. ATUALIZAR STATUS DO OBJETIVO (Marcar/Desmarcar)
+app.post('/api/objetivos/toggle', async (req: Request, res: Response) => {
+  try {
+    const { index, concluido } = req.body;
+    
+    // Como lemos a partir da linha 2 (A2), o index 0 do array corresponde à linha 2 na planilha.
+    const linhaSheets = Number(index) + 2; 
+    const rangeUpdate = `OBJETIVOS!A${linhaSheets}`;
+    
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: 'v4', auth: client as any });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: rangeUpdate,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[concluido ? 'TRUE' : 'FALSE']] },
+    });
+
+    res.json({ message: 'Objetivo atualizado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao atualizar objetivo:', error);
+    res.status(500).send({ error: 'Erro ao atualizar objetivo.' });
   }
 });
 

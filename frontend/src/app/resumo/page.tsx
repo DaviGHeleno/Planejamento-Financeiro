@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
+// Adicionámos o Search (Lupa) e o Loader2 (Animado) aqui:
+import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle, Search, Loader2 } from 'lucide-react';
 
 const CORES_PIZZA = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C', '#818CF8', '#C084FC'];
 
@@ -197,9 +199,15 @@ export default function ResumoPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
+        
+        {/* BOTÃO DE VOLTAR REDONDO COM ÍCONE */}
         <div className="mb-6">
-          <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
-            ← Voltar para o Menu
+          <Link 
+            href="/" 
+            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
+            title="Voltar para o Menu"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </Link>
         </div>
         
@@ -215,8 +223,8 @@ export default function ResumoPage() {
               onChange={(e) => setResponsavel(e.target.value)} 
               className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             >
-              <option value="Davi">Davi</option>
-              <option value="Stella">Stella</option>
+              <option className="bg-gray-800 text-gray-200" value="Davi">Davi</option>
+              <option className="bg-gray-800 text-gray-200" value="Stella">Stella</option>
             </select>
           </div>
 
@@ -228,7 +236,7 @@ export default function ResumoPage() {
               className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             >
               {anosOpcoes.map((a) => (
-                <option key={a} value={a}>20{a}</option>
+                <option className="bg-gray-800 text-gray-200" key={a} value={a}>20{a}</option>
               ))}
             </select>
           </div>
@@ -236,15 +244,26 @@ export default function ResumoPage() {
           <button 
             onClick={carregarDados}
             disabled={carregando}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 h-11 disabled:opacity-50"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 h-11 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {carregando ? 'Carregando...' : 'Carregar Dados do Ano'}
+            {carregando ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4" />
+                Carregar Dados do Ano
+              </>
+            )}
           </button>
         </div>
 
         {mensagem && (
-          <div className="mb-6 p-4 rounded-xl text-center font-medium text-sm bg-yellow-900/20 border border-yellow-500/30 text-yellow-400">
-            {mensagem}
+          <div className="mb-6 p-4 rounded-xl font-medium text-sm border flex items-center gap-3 bg-yellow-900/20 border-yellow-500/30 text-yellow-400">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>{mensagem}</span>
           </div>
         )}
 
@@ -253,15 +272,17 @@ export default function ResumoPage() {
             <div className="flex justify-center gap-3 mb-8">
               <button 
                 onClick={() => setVisao('tabela')}
-                className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'tabela' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'tabela' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
               >
-                📋 Tabela de Gastos
+                <Table className="w-4 h-4" />
+                Tabela de Gastos
               </button>
               <button 
                 onClick={() => setVisao('graficos')}
-                className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'graficos' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'graficos' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
               >
-                📊 Painel de Gráficos & Planejado
+                <BarChart3 className="w-4 h-4" />
+                Painel de Gráficos & Planejado
               </button>
             </div>
 
@@ -282,26 +303,26 @@ export default function ResumoPage() {
                     <tr className="bg-gray-900/50 border-b border-gray-700/80">
                       <th className="p-2">
                         <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option value="">Todos os Meses</option>
-                          {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
+                          <option className="bg-gray-800 text-gray-200" value="">Todos os Meses</option>
+                          {mesesOpcoes.map((m) => <option className="bg-gray-800 text-gray-200" key={m} value={m}>{m}</option>)}
                         </select>
                       </th>
                       <th className="p-2">
                         <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option value="">Todas as Categorias</option>
-                          {categoriaOpcoes.map((c) => <option key={c} value={c}>{c}</option>)}
+                          <option className="bg-gray-800 text-gray-200" value="">Todas as Categorias</option>
+                          {categoriaOpcoes.map((c) => <option className="bg-gray-800 text-gray-200" key={c} value={c}>{c}</option>)}
                         </select>
                       </th>
                       <th className="p-2">
                         <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option value="">Todas as Sub-categorias</option>
-                          {subcategoriaOpcoes.map((s) => <option key={s} value={s}>{s}</option>)}
+                          <option className="bg-gray-800 text-gray-200" value="">Todas as Sub-categorias</option>
+                          {subcategoriaOpcoes.map((s) => <option className="bg-gray-800 text-gray-200" key={s} value={s}>{s}</option>)}
                         </select>
                       </th>
                       <th className="p-2">
                         <select value={filtroMotivo} onChange={(e) => setFiltroMotivo(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option value="">Todos os Motivos</option>
-                          {motivoOpcoes.map((mo) => <option key={mo} value={mo}>{mo}</option>)}
+                          <option className="bg-gray-800 text-gray-200" value="">Todos os Motivos</option>
+                          {motivoOpcoes.map((mo) => <option className="bg-gray-800 text-gray-200" key={mo} value={mo}>{mo}</option>)}
                         </select>
                       </th>
                       
@@ -331,16 +352,19 @@ export default function ResumoPage() {
               <div className="space-y-8">
                 <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Filtrar Período dos Gráficos:</span>
-                  <select 
-                    value={filtroPeriodoGrafico} 
-                    onChange={(e) => setFiltroPeriodoGrafico(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 text-sm outline-none focus:border-blue-500 w-full md:w-64"
-                  >
-                    <option value="TODOS">📅 Ano Todo (Acumulado)</option>
-                    {mesesOpcoes.map((m) => (
-                      <option key={m} value={m}>🗓️ {m}</option>
-                    ))}
-                  </select>
+                  <div className="relative w-full md:w-64">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <select 
+                      value={filtroPeriodoGrafico} 
+                      onChange={(e) => setFiltroPeriodoGrafico(e.target.value)}
+                      className="bg-gray-800 border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-gray-200 text-sm outline-none focus:border-blue-500 w-full appearance-none"
+                    >
+                      <option className="bg-gray-800 text-gray-200" value="TODOS">Ano Todo (Acumulado)</option>
+                      {mesesOpcoes.map((m) => (
+                        <option className="bg-gray-800 text-gray-200" key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="bg-gray-900/30 p-6 md:p-8 rounded-2xl border border-gray-700/50">

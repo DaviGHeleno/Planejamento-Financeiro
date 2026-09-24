@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+import { ArrowLeft, Plus, Minus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 export default function InvestimentosPage() {
   const [isAdicionando, setIsAdicionando] = useState(false);
@@ -26,15 +27,19 @@ export default function InvestimentosPage() {
   const [invMes, setInvMes] = useState('MARÇO');
   const [invResponsavel, setInvResponsavel] = useState('Davi');
   const [invValor, setInvValor] = useState('');
+  
+  // Alterado para suportar estado de carregamento e erro
   const [invMensagem, setInvMensagem] = useState('');
+  const [invStatus, setInvStatus] = useState<'sucesso' | 'erro' | 'carregando' | ''>('');
 
-  // Estados específicos para o Resgate
   const [resAno, setResAno] = useState(2026);
   const [resMes, setResMes] = useState('MARÇO');
   const [resResponsavel, setResResponsavel] = useState('Davi');
-  const [resTipo, setResTipo] = useState('Futuro'); // 'Futuro' ou 'Pessoal'
+  const [resTipo, setResTipo] = useState('Futuro');
   const [resValor, setResValor] = useState('');
+  
   const [resMensagem, setResMensagem] = useState('');
+  const [resStatus, setResStatus] = useState<'sucesso' | 'erro' | 'carregando' | ''>('');
 
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
@@ -138,6 +143,7 @@ export default function InvestimentosPage() {
 
   const handleInvestimentoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setInvStatus('carregando');
     setInvMensagem('Enviando investimento...');
     const mesFormatado = invMes.charAt(0) + invMes.slice(1).toLowerCase();
 
@@ -151,19 +157,23 @@ export default function InvestimentosPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setInvMensagem(`✅ Investimento registrado! Futuro: R$ ${data.valorFuturo.toFixed(2)} | Pessoal: R$ ${data.valorPessoal.toFixed(2)}`);
+        setInvStatus('sucesso');
+        setInvMensagem(`Investimento registrado! Futuro: R$ ${data.valorFuturo.toFixed(2)} | Pessoal: R$ ${data.valorPessoal.toFixed(2)}`);
         setInvValor('');
         carregarDashboard();
       } else {
-        setInvMensagem(`❌ Erro: ${data.error || 'Erro ao salvar'}`);
+        setInvStatus('erro');
+        setInvMensagem(`Erro: ${data.error || 'Erro ao salvar'}`);
       }
     } catch {
-      setInvMensagem('❌ Erro de conexão com o back-end.');
+      setInvStatus('erro');
+      setInvMensagem('Erro de conexão com o back-end.');
     }
   };
 
   const handleResgateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setResStatus('carregando');
     setResMensagem('Processando resgate...');
     const mesFormatado = resMes.charAt(0) + resMes.slice(1).toLowerCase();
 
@@ -183,14 +193,17 @@ export default function InvestimentosPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setResMensagem(`✅ Resgate efetuado com sucesso!`);
+        setResStatus('sucesso');
+        setResMensagem(`Resgate efetuado com sucesso!`);
         setResValor('');
         carregarDashboard();
       } else {
-        setResMensagem(`❌ Erro: ${data.error || 'Erro ao realizar resgate'}`);
+        setResStatus('erro');
+        setResMensagem(`Erro: ${data.error || 'Erro ao realizar resgate'}`);
       }
     } catch {
-      setResMensagem('❌ Erro de conexão com o back-end.');
+      setResStatus('erro');
+      setResMensagem('Erro de conexão com o back-end.');
     }
   };
 
@@ -204,26 +217,51 @@ export default function InvestimentosPage() {
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
         
         {/* Cabeçalho */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700/50 pb-6 gap-4">
-          <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
-            ← Voltar para o Menu
-          </Link>
-          <h1 className="text-2xl font-bold text-blue-400 tracking-wide">
+        <div className="flex flex-col lg:flex-row justify-between items-center mb-8 border-b border-gray-700/50 pb-6 gap-6">
+          <div className="flex w-full lg:w-1/4 justify-start">
+            <Link 
+              href="/" 
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
+              title="Voltar para o Menu"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          </div>
+          
+          <h1 className="text-2xl font-bold text-blue-400 tracking-wide w-full lg:w-2/4 text-center">
             Dashboard de Investimentos
           </h1>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 w-full lg:w-1/4 justify-end">
             <button 
-              onClick={() => { setIsAdicionando(!isAdicionando); setIsResgatando(false); }}
-              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isAdicionando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-blue-600 hover:bg-blue-800 shadow-blue-900/20'} text-white text-sm`}
+              onClick={() => { 
+                setIsAdicionando(!isAdicionando); 
+                setIsResgatando(false);
+                setInvMensagem(''); 
+                setInvStatus(''); 
+              }}
+              className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isAdicionando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20 text-white'} text-sm`}
             >
-              {isAdicionando ? '✖ Cancelar' : '➕ ADICIONAR'}
+              {isAdicionando ? (
+                <><X className="w-4 h-4" /> Cancelar</>
+              ) : (
+                <><Plus className="w-4 h-4" /> ADICIONAR</>
+              )}
             </button>
             <button 
-              onClick={() => { setIsResgatando(!isResgatando); setIsAdicionando(false); }}
-              className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isResgatando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-sky-500 hover:bg-cyan-600 shadow-red-900/20'} text-white text-sm`}
+              onClick={() => { 
+                setIsResgatando(!isResgatando); 
+                setIsAdicionando(false);
+                setResMensagem(''); 
+                setResStatus('');
+              }}
+              className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${isResgatando ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-sky-500 hover:bg-cyan-600 shadow-sky-900/20 text-white'} text-sm`}
             >
-              {isResgatando ? '✖ Cancelar' : '➖ RESGATAR'}
+              {isResgatando ? (
+                <><X className="w-4 h-4" /> Cancelar</>
+              ) : (
+                <><Minus className="w-4 h-4" /> RESGATAR</>
+              )}
             </button>
           </div>
         </div>
@@ -237,8 +275,8 @@ export default function InvestimentosPage() {
                 <div>
                   <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
                   <select value={invResponsavel} onChange={(e) => setInvResponsavel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
-                    <option value="Davi">Davi</option>
-                    <option value="Stella">Stella</option>
+                    <option className="bg-gray-800 text-gray-200" value="Davi">Davi</option>
+                    <option className="bg-gray-800 text-gray-200" value="Stella">Stella</option>
                   </select>
                 </div>
                 <div>
@@ -249,7 +287,7 @@ export default function InvestimentosPage() {
               <div>
                 <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Mês</label>
                 <select value={invMes} onChange={(e) => setInvMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
-                  {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
+                  {mesesOpcoes.map((m) => <option className="bg-gray-800 text-gray-200" key={m} value={m}>{m}</option>)}
                 </select>
               </div>
               <div>
@@ -264,13 +302,20 @@ export default function InvestimentosPage() {
                   required 
                 />
               </div>
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 mt-2">
-                Salvar Investimento
+              <button 
+                type="submit" 
+                disabled={invStatus === 'carregando'}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {invStatus === 'carregando' ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                {invStatus === 'carregando' ? 'Enviando...' : 'Salvar Investimento'}
               </button>
             </form>
             {invMensagem && (
-              <div className={`mt-6 p-4 rounded-xl text-center font-medium text-sm border ${invMensagem.includes('❌') ? 'bg-red-900/20 border-red-500/30 text-red-400' : 'bg-blue-900/20 border-blue-500/30 text-blue-400'}`}>
-                {invMensagem}
+              <div className={`mt-6 p-4 rounded-xl font-medium text-sm border flex items-center justify-center gap-3 ${invStatus === 'erro' ? 'bg-red-900/20 border-red-500/30 text-red-400' : invStatus === 'sucesso' ? 'bg-emerald-900/20 border-emerald-500/30 text-emerald-400' : 'bg-blue-900/20 border-blue-500/30 text-blue-400'}`}>
+                {invStatus === 'erro' && <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+                {invStatus === 'sucesso' && <CheckCircle className="w-5 h-5 flex-shrink-0" />}
+                <span>{invMensagem}</span>
               </div>
             )}
           </div>
@@ -285,15 +330,15 @@ export default function InvestimentosPage() {
                 <div>
                   <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
                   <select value={resResponsavel} onChange={(e) => setResResponsavel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
-                    <option value="Davi">Davi</option>
-                    <option value="Stella">Stella</option>
+                    <option className="bg-gray-800 text-gray-200" value="Davi">Davi</option>
+                    <option className="bg-gray-800 text-gray-200" value="Stella">Stella</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Tipo de Resgate</label>
                   <select value={resTipo} onChange={(e) => setResTipo(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
-                    <option value="Futuro">Futuro</option>
-                    <option value="Pessoal">Pessoal</option>
+                    <option className="bg-gray-800 text-gray-200" value="Futuro">Futuro</option>
+                    <option className="bg-gray-800 text-gray-200" value="Pessoal">Pessoal</option>
                   </select>
                 </div>
               </div>
@@ -306,7 +351,7 @@ export default function InvestimentosPage() {
                 <div>
                   <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Mês</label>
                   <select value={resMes} onChange={(e) => setResMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
-                    {mesesOpcoes.map((m) => <option key={m} value={m}>{m}</option>)}
+                    {mesesOpcoes.map((m) => <option className="bg-gray-800 text-gray-200" key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
               </div>
@@ -324,14 +369,21 @@ export default function InvestimentosPage() {
                 />
               </div>
 
-              <button type="submit" className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-sky-900/20 mt-2">
-                Efetuar Resgate
+              <button 
+                type="submit" 
+                disabled={resStatus === 'carregando'}
+                className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-sky-900/20 mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {resStatus === 'carregando' ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                {resStatus === 'carregando' ? 'Processando...' : 'Efetuar Resgate'}
               </button>
             </form>
             {resMensagem && (
-              <div className={`mt-6 p-4 rounded-xl text-center font-medium text-sm border ${resMensagem.includes('❌') ? 'bg-red-900/20 border-red-500/30 text-red-400' : 'bg-emerald-900/20 border-emerald-500/30 text-emerald-400'}`}>
-                {resMensagem}
-              </div>
+               <div className={`mt-6 p-4 rounded-xl font-medium text-sm border flex items-center justify-center gap-3 ${resStatus === 'erro' ? 'bg-red-900/20 border-red-500/30 text-red-400' : resStatus === 'sucesso' ? 'bg-emerald-900/20 border-emerald-500/30 text-emerald-400' : 'bg-sky-900/20 border-sky-500/30 text-sky-400'}`}>
+               {resStatus === 'erro' && <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+               {resStatus === 'sucesso' && <CheckCircle className="w-5 h-5 flex-shrink-0" />}
+               <span>{resMensagem}</span>
+             </div>
             )}
           </div>
         )}
@@ -404,8 +456,9 @@ export default function InvestimentosPage() {
         )}
 
         {carregando ? (
-          <div className="flex justify-center items-center py-20">
-            <p className="text-gray-400 font-medium animate-pulse">A carregar evolução patrimonial...</p>
+          <div className="flex justify-center items-center py-20 flex-col gap-3">
+             <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+             <p className="text-gray-400 font-medium">A carregar evolução patrimonial...</p>
           </div>
         ) : (
           <div className="space-y-8">

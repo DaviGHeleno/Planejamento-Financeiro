@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ReceiptText, ChartColumn, TrendingUp, Target } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -12,23 +13,35 @@ export default function Home() {
         <div className="flex flex-col gap-4 pt-2">
           <Link 
             href="/gastos"
-            className="w-full bg-gray-700 hover:bg-blue-500 border border-blue-300 text-white font-bold p-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 text-center block"
+            className="w-full bg-gray-800 hover:bg-sky-600 border border-gray-600 text-white font-bold p-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-3"
           >
-            📊 Adicionar Gastos do Mês
+            <ReceiptText className="w-5 h-5 text-amber-300" />
+            Lançar Gastos
           </Link>
 
           <Link 
             href="/resumo"
-            className="w-full bg-gray-700 hover:bg-blue-500 border border-blue-300 text-white font-bold p-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 text-center block"
+            className="w-full bg-gray-800 hover:bg-sky-600 border border-gray-600 text-white font-bold p-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-3"
           >
-            📈 Visualizar Gastos
+            <ChartColumn className="w-5 h-5 text-purple-400" />
+            Consulta e Relatórios
           </Link>
 
           <Link 
             href="/investimentos"
-            className="w-full bg-gray-700 hover:bg-blue-500 border border-blue-200 text-white font-bold p-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 text-center block"
+            className="w-full bg-gray-800 hover:bg-sky-600 border border-gray-600 text-white font-bold p-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-3"
           >
-            💰 Investimentos
+            <TrendingUp className="w-5 h-5 text-emerald-400" />
+            Investimentos
+          </Link>
+
+          {/* NOVO BOTÃO DE OBJETIVOS */}
+          <Link 
+            href="/objetivos"
+            className="w-full bg-gray-800 hover:bg-sky-600 border border-gray-600 text-white font-bold p-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-3"
+          >
+            <Target className="w-5 h-5 text-rose-400" />
+            Objetivos do Casal
           </Link>
         </div>
       </div>

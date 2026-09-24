@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
+import { ArrowLeft, FileSpreadsheet, Plus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface ItemGasto {
   id: string;
@@ -17,6 +18,7 @@ export default function GastosPage() {
   const [ano, setAno] = useState('26');
   const [mes, setMes] = useState('SETEMBRO');
   const [mensagem, setMensagem] = useState('');
+  const [tipoMensagem, setTipoMensagem] = useState<'sucesso' | 'erro' | 'carregando' | ''>('');
   const [enviando, setEnviando] = useState(false);
 
   const anosOpcoes = ['26', '27', '28', '29', '30'];
@@ -25,7 +27,6 @@ export default function GastosPage() {
   const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'gym', 'esportes', 'mimos', 'compras', 'flock'];
   const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'DAVI', 'PRESENTE'];
 
-  // Inicia com campos vazios por padrão agora, obrigando a preencher
   const [itens, setItens] = useState<ItemGasto[]>([
     { id: '1', categoria: '', subcategoria: '', motivo: '', valor: '' }
   ]);
@@ -63,11 +64,15 @@ export default function GastosPage() {
     }
   };
 
-  // Retorna string vazia se não encontrar ou se vier errado do Excel
   const normalizarOpcaoRigorosa = (valor: string, opcoes: string[]) => {
     if (!valor) return '';
     const match = opcoes.find(opt => opt.toLowerCase() === valor.toLowerCase().trim());
     return match || '';
+  };
+
+  const mostrarMensagem = (texto: string, tipo: 'sucesso' | 'erro' | 'carregando') => {
+    setMensagem(texto);
+    setTipoMensagem(tipo);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +90,7 @@ export default function GastosPage() {
         const data = XLSX.utils.sheet_to_json<any>(ws);
 
         if (data.length === 0) {
-          setMensagem('❌ O ficheiro Excel está vazio.');
+          mostrarMensagem('O ficheiro Excel está vazio.', 'erro');
           return;
         }
 
@@ -105,14 +110,13 @@ export default function GastosPage() {
         });
 
         setItens(novosItens);
-        setMensagem(`✅ Ficheiro lido com sucesso! Atenção: as linhas a vermelho precisam ser corrigidas antes do envio.`);
+        mostrarMensagem(`Ficheiro lido com sucesso! (${novosItens.length} linhas). As linhas a vermelho precisam de ser corrigidas antes do envio.`, 'sucesso');
       } catch (error) {
         console.error(error);
-        setMensagem('❌ Erro ao processar o Excel.');
+        mostrarMensagem('Erro ao processar o ficheiro Excel.', 'erro');
       }
     };
     reader.readAsBinaryString(file);
-    // Limpa o input file para permitir fazer upload do mesmo ficheiro novamente se necessário
     e.target.value = '';
   };
 
@@ -138,25 +142,24 @@ export default function GastosPage() {
     const itensValidos = itens.filter((i) => i.valor.trim() !== '');
 
     if (itensValidos.length === 0) {
-      setMensagem('❌ Preencha o valor de pelo menos um gasto antes de enviar.');
+      mostrarMensagem('Preencha o valor de pelo menos um gasto antes de enviar.', 'erro');
       return;
     }
 
     const temValorInvalido = itensValidos.some(i => !validarFormatoMoeda(i.valor));
     if (temValorInvalido) {
-      setMensagem('❌ Erro: Formato de valor inválido.');
+      mostrarMensagem('Formato de valor inválido', 'erro');
       return; 
     }
 
-    // NOVA VALIDAÇÃO: Bloqueia se alguma linha tiver o valor preenchido mas faltar classificar algo
     const temCamposVazios = itensValidos.some(i => !i.categoria || !i.subcategoria || !i.motivo);
     if (temCamposVazios) {
-      setMensagem('❌ Erro: Existem campos vazios. Preencha todas as caixas delimitadas a vermelho antes de enviar.');
+      mostrarMensagem('Existem campos vazios. Preencha todas as caixas delimitadas em vermelho antes de enviar.', 'erro');
       return;
     }
 
     setEnviando(true);
-    setMensagem('Enviando gastos em lote...');
+    mostrarMensagem('Enviando gastos em lote...', 'carregando');
     
     const abaNome = `Mensal ${ano} - ${responsavel}`;
     const itensParaEnviar = itensValidos.map((i) => ({
@@ -176,13 +179,13 @@ export default function GastosPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setMensagem(`✅ Sucesso: ${itensParaEnviar.length} gasto(s) cadastrado(s) na aba "${abaNome}"!`);
+        mostrarMensagem(`${itensParaEnviar.length} gasto(s) cadastrado(s) na aba "${abaNome}" com sucesso!`, 'sucesso');
         setItens([{ id: Date.now().toString(), categoria: '', subcategoria: '', motivo: '', valor: '' }]);
       } else {
-        setMensagem(`❌ Erro: ${data.error || 'Erro ao salvar'}`);
+        mostrarMensagem(data.error || 'Erro ao salvar gastos na base de dados.', 'erro');
       }
     } catch {
-      setMensagem('❌ Erro de conexão com o back-end.');
+      mostrarMensagem('Erro de conexão com o servidor.', 'erro');
     } finally {
       setEnviando(false);
     }
@@ -191,9 +194,15 @@ export default function GastosPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
       <div className="max-w-4xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
+        
+        {/* BOTÃO DE VOLTAR REDONDO COM ÍCONE */}
         <div className="mb-6">
-          <Link href="/" className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors font-medium">
-            ← Voltar para o Menu
+          <Link 
+            href="/" 
+            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
+            title="Voltar para o Menu"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </Link>
         </div>
         
@@ -206,11 +215,12 @@ export default function GastosPage() {
           {/* BOTÃO DE UPLOAD DE EXCEL */}
           <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">📁 Importar Excel (.xlsx / .xls)</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">📁 Importar Excel (.xlsx / .xls)
+              </h3>
               <p className="text-xs text-gray-400">O arquivo deve conter as colunas: <strong>categorias | subcategorias | motivo | valor</strong></p>
             </div>
-            <label className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-blue-900/20 text-center">
-              <span>Selecionar Ficheiro Excel</span>
+            <label className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-blue-900/20 text-center">
+              <span>Selecionar Arquivo Exel</span>
               <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
             </label>
           </div>
@@ -252,7 +262,6 @@ export default function GastosPage() {
               const isUltima = index === itens.length - 1;
               const isValidoMoeda = validarFormatoMoeda(item.valor);
 
-              // Validações visuais das seleções
               const errorCategoria = !item.categoria && item.valor.trim() !== '';
               const errorSub = !item.subcategoria && item.valor.trim() !== '';
               const errorMotivo = !item.motivo && item.valor.trim() !== '';
@@ -312,10 +321,10 @@ export default function GastosPage() {
                       type="button"
                       onClick={() => removerLinha(item.id)}
                       disabled={itens.length === 1}
-                      className="text-red-400/80 hover:text-red-400 hover:bg-red-400/10 disabled:opacity-20 font-bold p-2 rounded-lg transition-all"
+                      className="text-gray-400 hover:text-red-400 hover:bg-red-400/10 disabled:opacity-20 font-bold p-2 rounded-lg transition-all"
                       title="Remover linha"
                     >
-                      ✖
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
@@ -327,9 +336,9 @@ export default function GastosPage() {
             <button
               type="button"
               onClick={adicionarLinha}
-              className="w-full md:w-1/3 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 font-semibold p-3.5 rounded-xl transition-colors text-sm shadow-sm"
+              className="w-full md:w-1/3 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 font-semibold p-3.5 rounded-xl transition-colors text-sm shadow-sm flex items-center justify-center gap-2"
             >
-              ➕ Nova Linha
+              <Plus className="w-4 h-4" /> Nova Linha
             </button>
 
             <button
@@ -343,8 +352,11 @@ export default function GastosPage() {
         </form>
 
         {mensagem && (
-          <div className={`mt-6 p-4 rounded-xl text-center font-medium text-sm border ${mensagem.includes('❌') ? 'bg-red-900/20 border-red-500/30 text-red-400' : 'bg-emerald-900/20 border-emerald-500/30 text-emerald-400'}`}>
-            {mensagem}
+          <div className={`mt-6 p-4 rounded-xl font-medium text-sm border flex items-center gap-3 ${tipoMensagem === 'erro' ? 'bg-red-900/20 border-red-500/30 text-red-400' : tipoMensagem === 'sucesso' ? 'bg-emerald-900/20 border-emerald-500/30 text-emerald-400' : 'bg-blue-900/20 border-blue-500/30 text-blue-400'}`}>
+            {tipoMensagem === 'erro' && <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+            {tipoMensagem === 'sucesso' && <CheckCircle className="w-5 h-5 flex-shrink-0" />}
+            {tipoMensagem === 'carregando' && <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin" />}
+            <span>{mensagem}</span>
           </div>
         )}
       </div>
