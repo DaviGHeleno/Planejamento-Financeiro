@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
-// Adicionámos o Search (Lupa) e o Loader2 (Animado) aqui:
-import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle, Search, Loader2 } from 'lucide-react';
+import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle } from 'lucide-react';
 
 const CORES_PIZZA = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C', '#818CF8', '#C084FC'];
 
@@ -244,19 +243,9 @@ export default function ResumoPage() {
           <button 
             onClick={carregarDados}
             disabled={carregando}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 h-11 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 h-11 disabled:opacity-50"
           >
-            {carregando ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Carregando...
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4" />
-                Carregar Dados do Ano
-              </>
-            )}
+            {carregando ? 'Carregando...' : 'Carregar Dados do Ano'}
           </button>
         </div>
 
