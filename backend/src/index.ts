@@ -7,11 +7,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const SPREADSHEET_ID = '1gzBwu9IF9ZO6kPRWMGYJYzvSqArhyxB9_Fqck9tdkcA';
 
+// Lógica para carregar credenciais da variável de ambiente no Render ou do arquivo local no PC
 const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, '../credentials.json'),
+  ...(process.env.GOOGLE_CREDENTIALS
+    ? { credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS) }
+    : { keyFile: path.join(__dirname, '../credentials.json') }),
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
@@ -398,6 +401,7 @@ app.get('/api/objetivos', async (req: Request, res: Response) => {
     res.status(500).send({ error: 'Erro ao ler Objetivos.' });
   }
 });
+
 // 6.1. ATUALIZAR STATUS DO OBJETIVO (Marcar/Desmarcar)
 app.post('/api/objetivos/toggle', async (req: Request, res: Response) => {
   try {
