@@ -128,12 +128,12 @@ app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
   }
 });
 
-// 2. ESCREVER INVESTIMENTO (Divisão 70/30) + HISTÓRICO
+// 2. ESCREVER INVESTIMENTO (Divisão 70/30) + HISTÓRICO COM SOMA
 app.post('/api/investimento', async (req: Request, res: Response) => {
   try {
     const { ano, mes, responsavel, valor } = req.body;
-    const valorFuturo = valor * 0.70;
-    const valorPessoal = valor * 0.30;
+    const aporteFuturo = valor * 0.70;
+    const aportePessoal = valor * 0.30;
 
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const linhaMes = meses.indexOf(mes) + 3; 
@@ -163,21 +163,37 @@ app.post('/api/investimento', async (req: Request, res: Response) => {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client as any });
 
+      // LER OS VALORES ATUAIS DA PLANILHA ANTES DE SUBSTITUIR
+    const leitura = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: rangeUpdate,
+    });
+
+    const valoresAtuais = leitura.data.values?.[0] || ['0', '0'];
+    
+    const valorFuturoAtual = parseFloat(valoresAtuais[0]?.toString().replace(/[R$\s.]/g, '').replace(',', '.') || '0');
+    const valorPessoalAtual = parseFloat(valoresAtuais[1]?.toString().replace(/[R$\s.]/g, '').replace(',', '.') || '0');
+
+    // 2. SOMAR O APORTE NOVO COM O VALOR EXISTENTE
+    const novoValorFuturo = valorFuturoAtual + aporteFuturo;
+    const novoValorPessoal = valorPessoalAtual + aportePessoal;
+
+    // 3. ATUALIZAR A PLANILHA COM A SOMA TOTAL
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: rangeUpdate,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[valorFuturo, valorPessoal]] },
+      requestBody: { values: [[novoValorFuturo, novoValorPessoal]] },
     });
 
     // Registra a ação no Histórico
     await registrarHistorico(
       'INVESTIMENTO',
       `${responsavel} realizou aporte referente a ${mes}/${ano}`,
-      `R$ ${valor.toFixed(2).replace('.', ',')} (Futuro: R$ ${valorFuturo.toFixed(2)} | Pessoal: R$ ${valorPessoal.toFixed(2)})`
+      `R$ ${valor.toFixed(2).replace('.', ',')} (Futuro: R$ ${aporteFuturo.toFixed(2)} | Pessoal: R$ ${aportePessoal.toFixed(2)})`
     );
 
-    res.json({ message: 'Investimento registrado!', valorFuturo, valorPessoal });
+    res.json({ message: 'Investimento registrado e somado!', valorFuturo: novoValorFuturo, valorPessoal: novoValorPessoal });
   } catch (error) {
     res.status(500).send({ error: 'Erro ao registrar investimento.' });
   }
