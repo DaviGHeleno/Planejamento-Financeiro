@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
-import { ArrowLeft, FileSpreadsheet, Plus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface ItemGasto {
   id: string;
+  descricao: string; // Campo apenas visual
   categoria: string;
   subcategoria: string;
   motivo: string;
@@ -23,12 +24,12 @@ export default function GastosPage() {
 
   const anosOpcoes = ['26', '27', '28', '29', '30'];
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
-  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'Carro Novo'];
-  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras'];
-  const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'NAMORO', 'PRESENTE'];
+  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'CARRO NOVO', 'EUROTRIP'];
+  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'gym', 'esportes', 'mimos', 'compras', 'flock'];
+  const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'DAVI', 'PRESENTE'];
 
   const [itens, setItens] = useState<ItemGasto[]>([
-    { id: '1', categoria: '', subcategoria: '', motivo: '', valor: '' }
+    { id: '1', descricao: '', categoria: '', subcategoria: '', motivo: '', valor: '' }
   ]);
 
   const adicionarLinha = () => {
@@ -36,6 +37,7 @@ export default function GastosPage() {
       ...prev,
       {
         id: Date.now().toString(),
+        descricao: '', // Nova linha começa com a descrição vazia
         categoria: prev[prev.length - 1]?.categoria || '',
         subcategoria: prev[prev.length - 1]?.subcategoria || '',
         motivo: prev[prev.length - 1]?.motivo || '',
@@ -95,6 +97,8 @@ export default function GastosPage() {
         }
 
         const novosItens: ItemGasto[] = data.map((row, index) => {
+          // Captura a descrição se ela existir na planilha importada
+          const descricaoKey = Object.keys(row).find(k => k.toLowerCase().includes('descri'));
           const categoriaKey = Object.keys(row).find(k => k.toLowerCase().includes('categor'));
           const subcategoriaKey = Object.keys(row).find(k => k.toLowerCase().includes('sub'));
           const motivoKey = Object.keys(row).find(k => k.toLowerCase().includes('motivo'));
@@ -102,6 +106,7 @@ export default function GastosPage() {
 
           return {
             id: (Date.now() + index).toString(),
+            descricao: descricaoKey ? String(row[descricaoKey]) : '', 
             categoria: normalizarOpcaoRigorosa(categoriaKey ? String(row[categoriaKey]) : '', categoriaOpcoes),
             subcategoria: normalizarOpcaoRigorosa(subcategoriaKey ? String(row[subcategoriaKey]) : '', subcategoriaOpcoes),
             motivo: normalizarOpcaoRigorosa(motivoKey ? String(row[motivoKey]) : '', motivoOpcoes),
@@ -162,6 +167,8 @@ export default function GastosPage() {
     mostrarMensagem('Enviando gastos em lote...', 'carregando');
     
     const abaNome = `Mensal ${ano} - ${responsavel}`;
+    
+    // A propriedade "descricao" NÃO é enviada no objeto itensParaEnviar
     const itensParaEnviar = itensValidos.map((i) => ({
       mes,
       categoria: i.categoria,
@@ -171,7 +178,10 @@ export default function GastosPage() {
     }));
 
     try {
-      const response = await fetch('http://localhost:3000/api/gasto', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      
+      // ROTAS CORRIGIDAS: /api/gasto (no singular) para combinar com o Backend
+      const response = await fetch(`${API_URL}/api/gasto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ aba: abaNome, itens: itensParaEnviar }),
@@ -180,7 +190,7 @@ export default function GastosPage() {
       const data = await response.json();
       if (response.ok) {
         mostrarMensagem(`${itensParaEnviar.length} gasto(s) cadastrado(s) na aba "${abaNome}" com sucesso!`, 'sucesso');
-        setItens([{ id: Date.now().toString(), categoria: '', subcategoria: '', motivo: '', valor: '' }]);
+        setItens([{ id: Date.now().toString(), descricao: '', categoria: '', subcategoria: '', motivo: '', valor: '' }]);
       } else {
         mostrarMensagem(data.error || 'Erro ao salvar gastos na base de dados.', 'erro');
       }
@@ -193,9 +203,9 @@ export default function GastosPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
-      <div className="max-w-4xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
+      <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
         
-        {/* BOTÃO DE VOLTAR REDONDO COM ÍCONE */}
+        {/* BOTÃO DE VOLTAR */}
         <div className="mb-6">
           <Link 
             href="/" 
@@ -215,12 +225,11 @@ export default function GastosPage() {
           {/* BOTÃO DE UPLOAD DE EXCEL */}
           <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">📁 Importar Excel (.xlsx / .xls)
-              </h3>
-              <p className="text-xs text-gray-400">O arquivo deve conter as colunas: <strong>categorias | subcategorias | motivo | valor</strong></p>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">📁 Importar Excel (.xlsx / .xls)</h3>
+              <p className="text-xs text-gray-400">O arquivo deve conter as colunas: <strong>descrição (opcional) | categorias | subcategorias | motivo | valor</strong></p>
             </div>
             <label className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-blue-900/20 text-center">
-              <span>Selecionar Arquivo Exel</span>
+              <span>Selecionar Arquivo Excel</span>
               <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
             </label>
           </div>
@@ -248,12 +257,13 @@ export default function GastosPage() {
             </div>
           </div>
 
-          {/* LISTA DINÂMICA */}
-          <div className="space-y-3 pt-4">
-            <div className="hidden md:grid md:grid-cols-12 gap-3 text-xs font-bold uppercase text-gray-500 px-2 tracking-wider">
-              <span className="col-span-3">Categoria</span>
-              <span className="col-span-3">Sub-categoria</span>
-              <span className="col-span-3">Motivo</span>
+          {/* LISTA DINÂMICA (Grid perfeito usando 12 colunas do Tailwind) */}
+          <div className="space-y-3 pt-4 overflow-x-auto">
+            <div className="hidden md:grid md:grid-cols-12 gap-3 text-xs font-bold uppercase text-gray-500 px-2 tracking-wider min-w-[800px]">
+              <span className="col-span-3">Descrição (Opcional)</span>
+              <span className="col-span-2">Categoria</span>
+              <span className="col-span-2">Sub-categoria</span>
+              <span className="col-span-2">Motivo</span>
               <span className="col-span-2">Valor (R$)</span>
               <span className="col-span-1 text-center">Ação</span>
             </div>
@@ -267,9 +277,20 @@ export default function GastosPage() {
               const errorMotivo = !item.motivo && item.valor.trim() !== '';
 
               return (
-                <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-gray-900/30 border border-gray-700 p-2.5 rounded-xl items-center hover:bg-gray-800/80 transition-colors">
+                <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-gray-900/30 border border-gray-700 p-2.5 rounded-xl items-center hover:bg-gray-800/80 transition-colors min-w-[800px]">
                   
+                  {/* CAMPO DE DESCRIÇÃO (Visual, col-span-3) */}
                   <div className="col-span-3">
+                    <input
+                      type="text"
+                      placeholder="Descrição curta..."
+                      value={item.descricao}
+                      onChange={(e) => atualizarItem(item.id, 'descricao', e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-sm text-gray-400 outline-none transition-all focus:border-gray-500 focus:ring-1 focus:ring-gray-500 italic"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
                     <select
                       value={item.categoria}
                       onChange={(e) => atualizarItem(item.id, 'categoria', e.target.value)}
@@ -280,7 +301,7 @@ export default function GastosPage() {
                     </select>
                   </div>
 
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <select
                       value={item.subcategoria}
                       onChange={(e) => atualizarItem(item.id, 'subcategoria', e.target.value)}
@@ -291,7 +312,7 @@ export default function GastosPage() {
                     </select>
                   </div>
 
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <select
                       value={item.motivo}
                       onChange={(e) => atualizarItem(item.id, 'motivo', e.target.value)}
