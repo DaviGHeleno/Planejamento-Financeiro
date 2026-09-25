@@ -34,9 +34,12 @@ export default function ResumoPage() {
     setCarregando(true);
     setMensagem('');
     try {
+      // INJEÇÃO DA VARIÁVEL DE AMBIENTE PARA COMUNICAR COM O RENDER
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      
       const [resGastos, resMetas] = await Promise.all([
-        fetch(`http://localhost:3000/api/gastos/${responsavel}/${ano}`),
-        fetch(`http://localhost:3000/api/metas/${responsavel}/${ano}`)
+        fetch(`${API_URL}/api/gastos/${responsavel}/${ano}`),
+        fetch(`${API_URL}/api/metas/${responsavel}/${ano}`)
       ]);
 
       const dataGastos = await resGastos.json();
