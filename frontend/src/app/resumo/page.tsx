@@ -28,7 +28,7 @@ export default function ResumoPage() {
 
   const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'CARRO NOVO', 'EUROTRIP'];
   const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras', 'presentes', 'whey'];
-  const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'NAMORO', 'PRESENTE'];
+  const motivoOpcoes = ['AMIGOS', 'TRABALHO', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'NAMORO', 'PRESENTE', 'ONE'];
 
   const carregarDados = async () => {
     setCarregando(true);

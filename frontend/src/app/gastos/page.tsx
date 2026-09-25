@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-re
 
 interface ItemGasto {
   id: string;
-  descricao: string; // Campo apenas visual
+  descricao: string;
   categoria: string;
   subcategoria: string;
   motivo: string;
@@ -24,9 +24,9 @@ export default function GastosPage() {
 
   const anosOpcoes = ['26', '27', '28', '29', '30'];
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
-  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'CARRO NOVO', 'EUROTRIP'];
-  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'gym', 'esportes', 'mimos', 'compras', 'flock'];
-  const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'DAVI', 'PRESENTE'];
+  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'Carro Novo'];
+  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'bar', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras'];
+  const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'NAMORO', 'PRESENTE', 'ESTACIONAMENTO'];
 
   const [itens, setItens] = useState<ItemGasto[]>([
     { id: '1', descricao: '', categoria: '', subcategoria: '', motivo: '', valor: '' }
@@ -37,7 +37,7 @@ export default function GastosPage() {
       ...prev,
       {
         id: Date.now().toString(),
-        descricao: '', // Nova linha começa com a descrição vazia
+        descricao: '',
         categoria: prev[prev.length - 1]?.categoria || '',
         subcategoria: prev[prev.length - 1]?.subcategoria || '',
         motivo: prev[prev.length - 1]?.motivo || '',
@@ -97,7 +97,6 @@ export default function GastosPage() {
         }
 
         const novosItens: ItemGasto[] = data.map((row, index) => {
-          // Captura a descrição se ela existir na planilha importada
           const descricaoKey = Object.keys(row).find(k => k.toLowerCase().includes('descri'));
           const categoriaKey = Object.keys(row).find(k => k.toLowerCase().includes('categor'));
           const subcategoriaKey = Object.keys(row).find(k => k.toLowerCase().includes('sub'));
@@ -168,7 +167,6 @@ export default function GastosPage() {
     
     const abaNome = `Mensal ${ano} - ${responsavel}`;
     
-    // A propriedade "descricao" NÃO é enviada no objeto itensParaEnviar
     const itensParaEnviar = itensValidos.map((i) => ({
       mes,
       categoria: i.categoria,
@@ -180,7 +178,6 @@ export default function GastosPage() {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
       
-      // ROTAS CORRIGIDAS: /api/gasto (no singular) para combinar com o Backend
       const response = await fetch(`${API_URL}/api/gasto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,7 +202,6 @@ export default function GastosPage() {
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
         
-        {/* BOTÃO DE VOLTAR */}
         <div className="mb-6">
           <Link 
             href="/" 
@@ -222,7 +218,6 @@ export default function GastosPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* BOTÃO DE UPLOAD DE EXCEL */}
           <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-1">📁 Importar Excel (.xlsx / .xls)</h3>
@@ -234,7 +229,6 @@ export default function GastosPage() {
             </label>
           </div>
 
-          {/* CABEÇALHO FIXO */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900/50 p-5 rounded-xl border border-gray-700">
             <div>
               <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
@@ -257,15 +251,15 @@ export default function GastosPage() {
             </div>
           </div>
 
-          {/* LISTA DINÂMICA (Grid perfeito usando 12 colunas do Tailwind) */}
           <div className="space-y-3 pt-4 overflow-x-auto">
-            <div className="hidden md:grid md:grid-cols-12 gap-3 text-xs font-bold uppercase text-gray-500 px-2 tracking-wider min-w-[800px]">
-              <span className="col-span-3">Descrição (Opcional)</span>
-              <span className="col-span-2">Categoria</span>
-              <span className="col-span-2">Sub-categoria</span>
-              <span className="col-span-2">Motivo</span>
-              <span className="col-span-2">Valor (R$)</span>
-              <span className="col-span-1 text-center">Ação</span>
+            {/* CABEÇALHO DO GRID COM PERCENTAGENS EXACTAS */}
+            <div className="hidden md:flex flex-nowrap gap-3 text-xs font-bold uppercase text-gray-500 px-2 tracking-wider w-full md:min-w-[1050px]">
+              <span className="w-[30%]">Descrição (Opcional)</span>
+              <span className="w-[18%]">Categoria</span>
+              <span className="w-[18%]">Sub-categoria</span>
+              <span className="w-[15%]">Motivo</span>
+              <span className="w-[13%]">Valor (R$)</span>
+              <span className="w-[6%] text-center">Ação</span>
             </div>
 
             {itens.map((item, index) => {
@@ -277,20 +271,23 @@ export default function GastosPage() {
               const errorMotivo = !item.motivo && item.valor.trim() !== '';
 
               return (
-                <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-gray-900/30 border border-gray-700 p-2.5 rounded-xl items-center hover:bg-gray-800/80 transition-colors min-w-[800px]">
+                <div 
+                  key={item.id} 
+                  className="flex flex-col md:flex-row md:flex-nowrap gap-3 bg-gray-900/30 border border-gray-700 p-2.5 rounded-xl md:items-center hover:bg-gray-800/80 transition-colors w-full md:min-w-[1050px]"
+                >
                   
-                  {/* CAMPO DE DESCRIÇÃO (Visual, col-span-3) */}
-                  <div className="col-span-3">
+                  {/* DESCRIÇÃO - Agora muito mais ampla (30%) */}
+                  <div className="w-full md:w-[30%]">
                     <input
                       type="text"
-                      placeholder="Descrição curta..."
+                      placeholder="Ex: Almoço no shopping..."
                       value={item.descricao}
                       onChange={(e) => atualizarItem(item.id, 'descricao', e.target.value)}
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-sm text-gray-400 outline-none transition-all focus:border-gray-500 focus:ring-1 focus:ring-gray-500 italic"
                     />
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="w-full md:w-[18%]">
                     <select
                       value={item.categoria}
                       onChange={(e) => atualizarItem(item.id, 'categoria', e.target.value)}
@@ -301,7 +298,7 @@ export default function GastosPage() {
                     </select>
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="w-full md:w-[18%]">
                     <select
                       value={item.subcategoria}
                       onChange={(e) => atualizarItem(item.id, 'subcategoria', e.target.value)}
@@ -312,7 +309,7 @@ export default function GastosPage() {
                     </select>
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="w-full md:w-[15%]">
                     <select
                       value={item.motivo}
                       onChange={(e) => atualizarItem(item.id, 'motivo', e.target.value)}
@@ -323,7 +320,7 @@ export default function GastosPage() {
                     </select>
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="w-full md:w-[13%]">
                     <input
                       type="text"
                       inputMode="decimal"
@@ -337,7 +334,7 @@ export default function GastosPage() {
                     />
                   </div>
 
-                  <div className="col-span-1 text-center flex justify-center">
+                  <div className="w-full md:w-[6%] flex justify-center mt-2 md:mt-0">
                     <button
                       type="button"
                       onClick={() => removerLinha(item.id)}
