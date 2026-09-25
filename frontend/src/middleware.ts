@@ -7,7 +7,10 @@ export function middleware(req: NextRequest) {
     const authValue = basicAuth.split(' ')[1];
     const [user, pwd] = atob(authValue).split(':');
 
-    if (user === 'casal' && pwd === 'nossasenha123') {
+    const validUser = process.env.BASIC_AUTH_USER;
+    const validPass = process.env.BASIC_AUTH_PASSWORD;
+
+    if (user === validUser && pwd === validPass) {
       return NextResponse.next();
     }
   }
@@ -20,16 +23,8 @@ export function middleware(req: NextRequest) {
   });
 }
 
-// Ignora assets estáticos, favicon e ficheiros internos do Next.js/Vercel
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
