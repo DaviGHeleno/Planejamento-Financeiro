@@ -19,6 +19,17 @@ const auth = new google.auth.GoogleAuth({
 });
 
 // ============================================================================
+// FUNÇÃO AUXILIAR: TEXTO LIVRE SEGURO
+// Impede que um texto colado pelo usuário vire fórmula na planilha
+// (valueInputOption: USER_ENTERED interpreta =, +, - e @ como fórmula).
+// ============================================================================
+function textoSeguro(valor: unknown): string {
+  const texto = (valor ?? '').toString().trim();
+  if (texto === '') return '';
+  return /^[=+\-@]/.test(texto) ? `'${texto}` : texto;
+}
+
+// ============================================================================
 // FUNÇÃO AUXILIAR: REGISTRO DE HISTÓRICO AUTOMÁTICO
 // ============================================================================
 async function registrarHistorico(acao: string, descricao: string, valor: string) {
@@ -306,7 +317,7 @@ app.get('/api/gastos/:responsavel/:ano', async (req: Request, res: Response) => 
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${abaNome}'!A48:E`,
+      range: `'${abaNome}'!A48:F`,
     });
 
     const rows = response.data.values || [];
@@ -317,6 +328,7 @@ app.get('/api/gastos/:responsavel/:ano', async (req: Request, res: Response) => 
       subcategoria: row[2] || '',
       motivo: row[3] || '',
       valor: row[4] || '',
+      descricao: row[5] || '',
     }));
 
     res.json({ gastos });
@@ -354,10 +366,10 @@ app.post('/api/gasto', async (req: Request, res: Response) => {
 
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${aba}'!A47:E47`,
+        range: `'${aba}'!A47:F47`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [['MES', 'CATEGORIA', 'SUB-CATEGORIA', 'MOTIVO', 'R$']],
+          values: [['MES', 'CATEGORIA', 'SUB-CATEGORIA', 'MOTIVO', 'R$', 'DESCRIÇÃO']],
         },
       });
     }
@@ -367,12 +379,13 @@ app.post('/api/gasto', async (req: Request, res: Response) => {
       item.categoria,
       item.subcategoria,
       item.motivo,
-      item.valor
+      item.valor,
+      textoSeguro(item.descricao)
     ]);
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${aba}'!A48:E`, 
+      range: `'${aba}'!A48:F`, 
       valueInputOption: 'USER_ENTERED', 
       requestBody: {
         values: linhasParaInserir,

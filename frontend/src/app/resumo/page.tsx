@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle, ChevronDown, Check } from 'lucide-react';
+import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle, ChevronDown, ChevronRight, Check, FileText } from 'lucide-react';
 
 const CORES_PIZZA = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C', '#818CF8', '#C084FC'];
 
@@ -134,6 +134,9 @@ export default function ResumoPage() {
   const [filtroSubcategoria, setFiltroSubcategoria] = useState<string[]>([]);
   const [filtroMotivo, setFiltroMotivo] = useState<string[]>([]);
 
+  // Linha da tabela com a descrição aberta (índice dentro dos dados filtrados).
+  const [linhaExpandida, setLinhaExpandida] = useState<number | null>(null);
+
   const anosOpcoes = ['26', '27', '28', '29', '30'];
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
@@ -252,6 +255,7 @@ export default function ResumoPage() {
         setFiltroSubcategoria([]);
         setFiltroMotivo([]);
         setFiltroPeriodoGrafico('TODOS');
+        setLinhaExpandida(null);
 
         if ((dataGastos.gastos || []).length === 0) {
           setMensagem(`Nenhum gasto encontrado para ${responsavel} em 20${ano}.`);
@@ -295,6 +299,7 @@ export default function ResumoPage() {
     filtroMes.length + filtroCategoria.length + filtroSubcategoria.length + filtroMotivo.length;
 
   const limparTodosFiltros = () => {
+    setLinhaExpandida(null);
     setFiltroMes([]);
     setFiltroCategoria([]);
     setFiltroSubcategoria([]);
@@ -506,25 +511,25 @@ export default function ResumoPage() {
                       rotulo="Todos os Meses"
                       opcoes={mesesOpcoes}
                       selecionados={filtroMes}
-                      onChange={setFiltroMes}
+                      onChange={(v) => { setLinhaExpandida(null); setFiltroMes(v); }}
                     />
                     <FiltroMultiplo
                       rotulo="Todas as Categorias"
                       opcoes={categoriaOpcoes}
                       selecionados={filtroCategoria}
-                      onChange={setFiltroCategoria}
+                      onChange={(v) => { setLinhaExpandida(null); setFiltroCategoria(v); }}
                     />
                     <FiltroMultiplo
                       rotulo="Todas as Sub-categorias"
                       opcoes={subcategoriaOpcoes}
                       selecionados={filtroSubcategoria}
-                      onChange={setFiltroSubcategoria}
+                      onChange={(v) => { setLinhaExpandida(null); setFiltroSubcategoria(v); }}
                     />
                     <FiltroMultiplo
                       rotulo="Todos os Motivos"
                       opcoes={motivoOpcoes}
                       selecionados={filtroMotivo}
-                      onChange={setFiltroMotivo}
+                      onChange={(v) => { setLinhaExpandida(null); setFiltroMotivo(v); }}
                     />
                   </div>
 
@@ -550,15 +555,54 @@ export default function ResumoPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dadosFiltradosTabela.map((gasto, index) => (
-                        <tr key={index} className="border-b border-gray-700/40 hover:bg-gray-700/20 transition-colors">
-                          <td className="p-3 text-sm text-gray-300">{gasto.mes}</td>
-                          <td className="p-3 text-sm text-gray-300">{gasto.categoria}</td>
-                          <td className="p-3 text-sm text-gray-300">{gasto.subcategoria}</td>
-                          <td className="p-3 text-sm text-gray-300">{gasto.motivo}</td>
-                          <td className="p-3 text-sm font-semibold text-red-300">{gasto.valor}</td>
-                        </tr>
-                      ))}
+                      {dadosFiltradosTabela.map((gasto, index) => {
+                        const descricao = (gasto.descricao || '').trim();
+                        const temDescricao = descricao !== '';
+                        const expandida = linhaExpandida === index;
+
+                        return (
+                          <React.Fragment key={index}>
+                            <tr
+                              onClick={() => temDescricao && setLinhaExpandida(expandida ? null : index)}
+                              className={`border-b border-gray-700/40 transition-colors ${
+                                temDescricao ? 'cursor-pointer hover:bg-gray-700/20' : ''
+                              } ${expandida ? 'bg-gray-700/20' : ''}`}
+                              title={temDescricao ? 'Clique para ver a descrição' : undefined}
+                            >
+                              <td className="p-3 text-sm text-gray-300">
+                                <span className="flex items-center gap-2">
+                                  {temDescricao ? (
+                                    expandida
+                                      ? <ChevronDown className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                                      : <ChevronRight className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                                  ) : (
+                                    <span className="w-3.5 flex-shrink-0" />
+                                  )}
+                                  {gasto.mes}
+                                </span>
+                              </td>
+                              <td className="p-3 text-sm text-gray-300">{gasto.categoria}</td>
+                              <td className="p-3 text-sm text-gray-300">{gasto.subcategoria}</td>
+                              <td className="p-3 text-sm text-gray-300">{gasto.motivo}</td>
+                              <td className="p-3 text-sm font-semibold text-red-300">{gasto.valor}</td>
+                            </tr>
+
+                            {expandida && (
+                              <tr className="border-b border-gray-700/40 bg-gray-900/50">
+                                <td colSpan={5} className="px-6 py-4">
+                                  <div className="flex items-start gap-3">
+                                    <FileText className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Descrição</p>
+                                      <p className="text-sm text-gray-300 whitespace-pre-wrap break-words">{descricao}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
 
