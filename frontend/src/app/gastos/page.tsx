@@ -25,7 +25,7 @@ export default function GastosPage() {
   const anosOpcoes = ['26', '27', '28', '29', '30'];
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
   const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'Carro Novo'];
-  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'bar', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras'];
+  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'bar', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras', 'presente'];
   const motivoOpcoes = ['AMIGOS', 'ONE', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'NAMORO', 'PRESENTE', 'ESTACIONAMENTO'];
 
   const [itens, setItens] = useState<ItemGasto[]>([

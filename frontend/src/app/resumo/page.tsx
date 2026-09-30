@@ -1,11 +1,121 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle, ChevronDown, Check } from 'lucide-react';
 
 const CORES_PIZZA = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C', '#818CF8', '#C084FC'];
+
+// ============================================================================
+// FILTRO COM SELEÇÃO MÚLTIPLA (dropdown com checkbox)
+// Array vazio = nenhum filtro aplicado (mostra tudo).
+// ============================================================================
+interface FiltroMultiploProps {
+  rotulo: string;
+  opcoes: string[];
+  selecionados: string[];
+  onChange: (novos: string[]) => void;
+}
+
+function FiltroMultiplo({ rotulo, opcoes, selecionados, onChange }: FiltroMultiploProps) {
+  const [aberto, setAberto] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+
+    const handleClickFora = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setAberto(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAberto(false);
+    };
+
+    document.addEventListener('mousedown', handleClickFora);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickFora);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [aberto]);
+
+  const alternar = (opcao: string) => {
+    if (selecionados.includes(opcao)) {
+      onChange(selecionados.filter((s) => s !== opcao));
+    } else {
+      onChange([...selecionados, opcao]);
+    }
+  };
+
+  const texto =
+    selecionados.length === 0
+      ? rotulo
+      : selecionados.length === 1
+        ? selecionados[0]
+        : `${selecionados.length} selecionados`;
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        className={`w-full flex items-center justify-between gap-2 bg-gray-800 border rounded-lg px-3 py-2.5 text-sm outline-none transition-all ${
+          selecionados.length > 0
+            ? 'border-blue-500/60 text-blue-300'
+            : 'border-gray-700 text-gray-300 hover:border-gray-600'
+        }`}
+      >
+        <span className="truncate text-left">{texto}</span>
+        <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${aberto ? 'rotate-180' : ''}`} />
+      </button>
+
+      {aberto && (
+        <div className="absolute z-30 mt-2 w-full min-w-[12rem] bg-gray-800 border border-gray-600 rounded-xl shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700 bg-gray-900/50">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{rotulo}</span>
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              disabled={selecionados.length === 0}
+              className="text-[10px] font-bold uppercase tracking-wider text-blue-400 hover:text-blue-300 disabled:opacity-30"
+            >
+              Limpar
+            </button>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto py-1">
+            {opcoes.length === 0 && (
+              <p className="px-3 py-2 text-xs text-gray-500">Nenhuma opção nos dados.</p>
+            )}
+            {opcoes.map((opcao) => {
+              const marcado = selecionados.includes(opcao);
+              return (
+                <button
+                  key={opcao}
+                  type="button"
+                  onClick={() => alternar(opcao)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-gray-200 hover:bg-gray-700/60 transition-colors"
+                >
+                  <span
+                    className={`w-4 h-4 flex-shrink-0 rounded border flex items-center justify-center ${
+                      marcado ? 'bg-blue-500 border-blue-500' : 'border-gray-500'
+                    }`}
+                  >
+                    {marcado && <Check className="w-3 h-3 text-white" />}
+                  </span>
+                  <span className="truncate">{opcao}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ResumoPage() {
   const [responsavel, setResponsavel] = useState('Davi');
@@ -18,17 +128,104 @@ export default function ResumoPage() {
 
   const [filtroPeriodoGrafico, setFiltroPeriodoGrafico] = useState('TODOS');
 
-  const [filtroMes, setFiltroMes] = useState('');
-  const [filtroCategoria, setFiltroCategoria] = useState('');
-  const [filtroSubcategoria, setFiltroSubcategoria] = useState('');
-  const [filtroMotivo, setFiltroMotivo] = useState('');
+  // Filtros da tabela: seleção múltipla. Vazio = sem filtro.
+  const [filtroMes, setFiltroMes] = useState<string[]>([]);
+  const [filtroCategoria, setFiltroCategoria] = useState<string[]>([]);
+  const [filtroSubcategoria, setFiltroSubcategoria] = useState<string[]>([]);
+  const [filtroMotivo, setFiltroMotivo] = useState<string[]>([]);
 
   const anosOpcoes = ['26', '27', '28', '29', '30'];
   const mesesOpcoes = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
-  const categoriaOpcoes = ['Alimentação', 'Atividade Física', 'Cuidado Pessoal', 'Extras', 'Futilidades', 'Imprevisto', 'Lazer', 'Transporte', 'CARRO NOVO', 'EUROTRIP'];
-  const subcategoriaOpcoes = ['carro', 'uber', 'restaurante', 'lanche', 'supermercado', 'beleza', 'terapia', 'remedio', 'passeios', 'hobbies', 'eventos', 'esportes', 'mimos', 'compras', 'presentes', 'whey'];
-  const motivoOpcoes = ['AMIGOS', 'TRABALHO', 'FAMILIA', 'GASOLINA', 'CONSERTO', 'PESSOAL', 'NAMORO', 'PRESENTE', 'ONE'];
+  // ==========================================================================
+  // NORMALIZADORES
+  // Agrupam variantes de escrita (maiúscula, acento, sinônimo) num nome único.
+  // São a base tanto dos filtros quanto dos gráficos.
+  // ==========================================================================
+  const normalizarCategoria = (cat: string) => {
+    const c = (cat || '').trim().toLowerCase();
+    if (!c) return '';
+    if (c.includes('transporte')) return 'TRANSPORTE';
+    if (c.includes('alimentação') || c.includes('alimentacao')) return 'ALIMENTAÇÃO';
+    if (c.includes('cuidado') || c.includes('pessoal')) return 'CUIDADOS PESSOAIS';
+    if (c.includes('atividade') || c.includes('fisica') || c.includes('física')) return 'ATIVIDADES FÍSICAS';
+    if (c.includes('extra') || c.includes('futilidade')) return 'EXTRAS/FUTILIDADES';
+    if (c.includes('lazer')) return 'LAZER';
+    if (c.includes('imprevisto')) return 'IMPREVISTOS';
+    if (c.includes('carro') || c.includes('parcelas')) return 'PARCELAS CARRO';
+    return cat.trim().toUpperCase();
+  };
+
+  const normalizarSubcategoria = (sub: string) => {
+    const s = (sub || '').trim().toLowerCase();
+    if (!s) return '';
+    if (s.includes('carro')) return 'Carro';
+    if (s.includes('uber')) return 'Uber';
+    if (s.includes('restaurante')) return 'Restaurante';
+    if (s.includes('lanche')) return 'Lanche';
+    if (s.includes('supermercado')) return 'Supermercado';
+    if (s.includes('beleza')) return 'Beleza';
+    if (s.includes('terapia')) return 'Terapia';
+    if (s.includes('remedio') || s.includes('remédio')) return 'Remédio';
+    if (s.includes('viagen') || s.includes('viagem')) return 'Viagens';
+    if (s.includes('hobbie') || s.includes('hobbies')) return 'Hobbies';
+    if (s.includes('evento')) return 'Eventos';
+    if (s.includes('gym')) return 'Gym';
+    if (s.includes('mimo')) return 'Mimos';
+    if (s.includes('compra')) return 'Compras';
+    if (s.includes('flock')) return 'Flock';
+    if (s.includes('presente')) return 'Presentes';
+    if (s.includes('whey')) return 'Whey';
+    return sub.trim().charAt(0).toUpperCase() + sub.trim().slice(1).toLowerCase();
+  };
+
+  const normalizarMotivo = (mot: string) => (mot || '').trim().toUpperCase();
+  const normalizarMes = (mes: string) => (mes || '').trim().toUpperCase();
+
+  // ==========================================================================
+  // ORDEM DE EXIBIÇÃO (apenas preferência visual — não limita o conteúdo)
+  // Nomes conhecidos aparecem primeiro nesta ordem; os demais (inclusive
+  // classificações antigas que não existem mais) entram depois, em ordem
+  // alfabética.
+  // ==========================================================================
+  const ordemCategorias = [
+    'TRANSPORTE', 'ALIMENTAÇÃO', 'CUIDADOS PESSOAIS',
+    'ATIVIDADES FÍSICAS', 'EXTRAS/FUTILIDADES', 'LAZER', 'IMPREVISTOS'
+  ];
+
+  const ordemSubcategorias = [
+    'Carro', 'Uber', 'Restaurante', 'Lanche', 'Supermercado',
+    'Beleza', 'Terapia', 'Remédio', 'Viagens', 'Hobbies',
+    'Eventos', 'Gym', 'Mimos', 'Compras', 'Flock', 'Presentes', 'Whey'
+  ];
+
+  const ordemMotivos = [
+    'AMIGOS', 'TRABALHO', 'ONE', 'FAMILIA', 'GASOLINA',
+    'CONSERTO', 'PESSOAL', 'NAMORO', 'PRESENTE', 'ESTACIONAMENTO'
+  ];
+
+  const ordenarPorPreferencia = (valores: string[], ordemPreferida: string[]) => {
+    const conhecidos = ordemPreferida.filter((o) => valores.includes(o));
+    const desconhecidos = valores
+      .filter((v) => !ordemPreferida.includes(v))
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    return [...conhecidos, ...desconhecidos];
+  };
+
+  // Extrai os valores distintos que realmente existem nos dados carregados.
+  const derivarOpcoes = (
+    dados: any[],
+    campo: 'categoria' | 'subcategoria' | 'motivo',
+    normalizador: (v: string) => string,
+    ordemPreferida: string[]
+  ) => {
+    const encontrados = new Set<string>();
+    dados.forEach((gasto) => {
+      const valor = normalizador(gasto[campo] || '');
+      if (valor) encontrados.add(valor);
+    });
+    return ordenarPorPreferencia(Array.from(encontrados), ordemPreferida);
+  };
 
   const carregarDados = async () => {
     setCarregando(true);
@@ -36,7 +233,7 @@ export default function ResumoPage() {
     try {
       // INJEÇÃO DA VARIÁVEL DE AMBIENTE PARA COMUNICAR COM O RENDER
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      
+
       const [resGastos, resMetas] = await Promise.all([
         fetch(`${API_URL}/api/gastos/${responsavel}/${ano}`),
         fetch(`${API_URL}/api/metas/${responsavel}/${ano}`)
@@ -48,6 +245,14 @@ export default function ResumoPage() {
       if (resGastos.ok && resMetas.ok) {
         setDadosGastos(dataGastos.gastos || []);
         setDadosMetas(dataMetas.metas || []);
+
+        // Limpa filtros: as opções mudam conforme o ano/responsável carregado.
+        setFiltroMes([]);
+        setFiltroCategoria([]);
+        setFiltroSubcategoria([]);
+        setFiltroMotivo([]);
+        setFiltroPeriodoGrafico('TODOS');
+
         if ((dataGastos.gastos || []).length === 0) {
           setMensagem(`Nenhum gasto encontrado para ${responsavel} em 20${ano}.`);
         }
@@ -68,151 +273,152 @@ export default function ResumoPage() {
     return isNaN(num) ? 0 : num;
   };
 
-  const dadosFiltradosTabela = dadosGastos.filter((gasto) => {
-    const matchMes = !filtroMes || gasto.mes.trim().toUpperCase() === filtroMes.toUpperCase();
-    const matchCat = !filtroCategoria || gasto.categoria.trim().toLowerCase() === filtroCategoria.toLowerCase();
-    const matchSub = !filtroSubcategoria || gasto.subcategoria.trim().toLowerCase() === filtroSubcategoria.toLowerCase();
-    const matchMot = !filtroMotivo || gasto.motivo.trim().toUpperCase() === filtroMotivo.toUpperCase();
-    return matchMes && matchCat && matchSub && matchMot;
-  });
+  // ==========================================================================
+  // OPÇÕES DOS FILTROS — vindas dos dados, não de listas fixas
+  // ==========================================================================
+  const categoriaOpcoes = useMemo(
+    () => derivarOpcoes(dadosGastos, 'categoria', normalizarCategoria, ordemCategorias),
+    [dadosGastos]
+  );
 
-  const valorTotalFiltrado = dadosFiltradosTabela.reduce((acc, gasto) => {
-    return acc + parseValor(gasto.valor);
-  }, 0);
+  const subcategoriaOpcoes = useMemo(
+    () => derivarOpcoes(dadosGastos, 'subcategoria', normalizarSubcategoria, ordemSubcategorias),
+    [dadosGastos]
+  );
 
-  const dadosParaGraficos = dadosGastos.filter((gasto) => {
-    if (filtroPeriodoGrafico === 'TODOS') return true;
-    return gasto.mes.trim().toUpperCase() === filtroPeriodoGrafico.toUpperCase();
-  });
+  const motivoOpcoes = useMemo(
+    () => derivarOpcoes(dadosGastos, 'motivo', normalizarMotivo, ordemMotivos),
+    [dadosGastos]
+  );
 
-  const normalizarCategoria = (cat: string) => {
-    const c = cat.trim().toLowerCase();
-    if (c.includes('transporte')) return 'TRANSPORTE';
-    if (c.includes('alimentação') || c.includes('alimentacao')) return 'ALIMENTAÇÃO';
-    if (c.includes('cuidado') || c.includes('pessoal')) return 'CUIDADOS PESSOAIS';
-    if (c.includes('atividade') || c.includes('fisica') || c.includes('física')) return 'ATIVIDADES FÍSICAS';
-    if (c.includes('extra') || c.includes('futilidade')) return 'EXTRAS/FUTILIDADES';
-    if (c.includes('lazer')) return 'LAZER';
-    if (c.includes('imprevisto')) return 'IMPREVISTOS';
-    if (c.includes('carro') || c.includes('parcelas')) return 'PARCELAS CARRO';
-    return cat.trim().toUpperCase();
+  const totalFiltrosAtivos =
+    filtroMes.length + filtroCategoria.length + filtroSubcategoria.length + filtroMotivo.length;
+
+  const limparTodosFiltros = () => {
+    setFiltroMes([]);
+    setFiltroCategoria([]);
+    setFiltroSubcategoria([]);
+    setFiltroMotivo([]);
   };
 
-  const metasMap: { [key: string]: number } = {};
-  dadosMetas.forEach((linha) => {
-    if (linha[0]) {
-      const nomeCat = normalizarCategoria(linha[0]);
-      const valorMeta = parseValor(linha[1]);
-      metasMap[nomeCat] = valorMeta;
-    }
-  });
+  // OU dentro de cada campo, E entre campos.
+  const dadosFiltradosTabela = useMemo(() => dadosGastos.filter((gasto) => {
+    const matchMes = filtroMes.length === 0 || filtroMes.some((m) => normalizarMes(m) === normalizarMes(gasto.mes));
+    const matchCat = filtroCategoria.length === 0 || filtroCategoria.includes(normalizarCategoria(gasto.categoria));
+    const matchSub = filtroSubcategoria.length === 0 || filtroSubcategoria.includes(normalizarSubcategoria(gasto.subcategoria));
+    const matchMot = filtroMotivo.length === 0 || filtroMotivo.includes(normalizarMotivo(gasto.motivo));
+    return matchMes && matchCat && matchSub && matchMot;
+  }), [dadosGastos, filtroMes, filtroCategoria, filtroSubcategoria, filtroMotivo]);
 
-  const dadosCatMap = dadosParaGraficos.reduce((acc: any, item: any) => {
+  const valorTotalFiltrado = useMemo(
+    () => dadosFiltradosTabela.reduce((acc, gasto) => acc + parseValor(gasto.valor), 0),
+    [dadosFiltradosTabela]
+  );
+
+  const dadosParaGraficos = useMemo(() => dadosGastos.filter((gasto) => {
+    if (filtroPeriodoGrafico === 'TODOS') return true;
+    return normalizarMes(gasto.mes) === normalizarMes(filtroPeriodoGrafico);
+  }), [dadosGastos, filtroPeriodoGrafico]);
+
+  const metasMap = useMemo(() => {
+    const mapa: { [key: string]: number } = {};
+    dadosMetas.forEach((linha) => {
+      if (linha[0]) {
+        const nomeCat = normalizarCategoria(linha[0]);
+        if (nomeCat) mapa[nomeCat] = parseValor(linha[1]);
+      }
+    });
+    return mapa;
+  }, [dadosMetas]);
+
+  const dadosCatMap = useMemo(() => dadosParaGraficos.reduce((acc: any, item: any) => {
     const catPadrao = normalizarCategoria(item.categoria || '');
-    const val = parseValor(item.valor);
+    if (!catPadrao) return acc;
     if (!acc[catPadrao]) acc[catPadrao] = 0;
-    acc[catPadrao] += val;
+    acc[catPadrao] += parseValor(item.valor);
     return acc;
-  }, {});
-
-  const ordemCategorias = [
-    'TRANSPORTE', 'ALIMENTAÇÃO', 'CUIDADOS PESSOAIS', 
-    'ATIVIDADES FÍSICAS', 'EXTRAS/FUTILIDADES', 'LAZER', 'IMPREVISTOS'
-  ];
+  }, {}), [dadosParaGraficos]);
 
   const fatorMultiplicador = filtroPeriodoGrafico === 'TODOS' ? 12 : 1;
 
-  const dadosGraficoCategorias = ordemCategorias.map((cat) => ({
-    categoria: cat,
-    Realizado: Number((dadosCatMap[cat] || 0).toFixed(2)),
-    Planejado: Number(((metasMap[cat] || 0) * fatorMultiplicador).toFixed(2)),
-  }));
-
-  const normalizarSubcategoria = (sub: string) => {
-    const s = sub.trim().toLowerCase();
-    if (s.includes('carro')) return 'Carro';
-    if (s.includes('uber')) return 'Uber';
-    if (s.includes('restaurante')) return 'Restaurante';
-    if (s.includes('lanche')) return 'Lanche';
-    if (s.includes('supermercado')) return 'Supermercado';
-    if (s.includes('beleza')) return 'Beleza';
-    if (s.includes('terapia')) return 'Terapia';
-    if (s.includes('remedio') || s.includes('remédio')) return 'Remédio';
-    if (s.includes('viagen') || s.includes('viagem')) return 'Viagens';
-    if (s.includes('hobbie') || s.includes('hobbies')) return 'Hobbies';
-    if (s.includes('evento')) return 'Eventos';
-    if (s.includes('gym')) return 'Gym';
-    if (s.includes('mimo')) return 'Mimos';
-    if (s.includes('compra')) return 'Compras';
-    if (s.includes('flock')) return 'Flock';
-    if (s.includes('presente')) return 'Presentes';
-    if (s.includes('whey')) return 'Whey';
-    return sub.charAt(0).toUpperCase() + sub.slice(1).toLowerCase();
-  };
-
-  const dadosSubMap = dadosParaGraficos.reduce((acc: any, item: any) => {
-    const subPadrao = normalizarSubcategoria(item.subcategoria || '');
-    const val = parseValor(item.valor);
-    if (!acc[subPadrao]) acc[subPadrao] = 0;
-    acc[subPadrao] += val;
-    return acc;
-  }, {});
-
-  const ordemSubcategorias = [
-    'Carro', 'Uber', 'Restaurante', 'Lanche', 'Supermercado', 
-    'Beleza', 'Terapia', 'Remédio', 'Viagens', 'Hobbies', 
-    'Eventos', 'Gym', 'Mimos', 'Compras', 'Flock', 'Presentes', 'Whey'
-  ];
-
-  const dadosGraficoSubcategorias = ordemSubcategorias.map((sub) => ({
-    subcategoria: sub,
-    Total: Number((dadosSubMap[sub] || 0).toFixed(2)),
-  }));
-
-  const dadosPizzasPorCategoria = ordemCategorias.map((cat) => {
-    const gastosDaCategoria = dadosParaGraficos.filter(
-      (gasto) => normalizarCategoria(gasto.categoria || '') === cat
-    );
-
-    const subMapDaCategoria = gastosDaCategoria.reduce((acc: any, item: any) => {
-      const sub = normalizarSubcategoria(item.subcategoria || 'Outros');
-      const val = parseValor(item.valor);
-      if (!acc[sub]) acc[sub] = 0;
-      acc[sub] += val;
-      return acc;
-    }, {});
-
-    const dataPizza = Object.keys(subMapDaCategoria)
-      .map((sub) => ({
-        name: sub,
-        value: Number(subMapDaCategoria[sub].toFixed(2)),
-      }))
-      .filter((item) => item.value > 0);
-
-    const totalDaCategoria = dataPizza.reduce((sum, item) => sum + item.value, 0);
-
-    return {
+  // Eixo do gráfico: categorias presentes nos dados do período
+  // UNIÃO categorias que têm meta definida (para não sumir meta sem gasto).
+  const dadosGraficoCategorias = useMemo(() => {
+    const presentes = new Set<string>([
+      ...Object.keys(dadosCatMap),
+      ...Object.keys(metasMap),
+    ]);
+    return ordenarPorPreferencia(Array.from(presentes), ordemCategorias).map((cat) => ({
       categoria: cat,
-      total: totalDaCategoria,
-      dados: dataPizza,
-    };
-  }).filter(pizza => pizza.total > 0);
+      Realizado: Number((dadosCatMap[cat] || 0).toFixed(2)),
+      Planejado: Number(((metasMap[cat] || 0) * fatorMultiplicador).toFixed(2)),
+    }));
+  }, [dadosCatMap, metasMap, fatorMultiplicador]);
+
+  const dadosSubMap = useMemo(() => dadosParaGraficos.reduce((acc: any, item: any) => {
+    const subPadrao = normalizarSubcategoria(item.subcategoria || '');
+    if (!subPadrao) return acc;
+    if (!acc[subPadrao]) acc[subPadrao] = 0;
+    acc[subPadrao] += parseValor(item.valor);
+    return acc;
+  }, {}), [dadosParaGraficos]);
+
+  const dadosGraficoSubcategorias = useMemo(
+    () => ordenarPorPreferencia(Object.keys(dadosSubMap), ordemSubcategorias).map((sub) => ({
+      subcategoria: sub,
+      Total: Number((dadosSubMap[sub] || 0).toFixed(2)),
+    })),
+    [dadosSubMap]
+  );
+
+  // Pizzas: uma por categoria existente nos dados do período.
+  const dadosPizzasPorCategoria = useMemo(() => {
+    const categorias = ordenarPorPreferencia(Object.keys(dadosCatMap), ordemCategorias);
+
+    return categorias.map((cat) => {
+      const gastosDaCategoria = dadosParaGraficos.filter(
+        (gasto) => normalizarCategoria(gasto.categoria || '') === cat
+      );
+
+      const subMapDaCategoria = gastosDaCategoria.reduce((acc: any, item: any) => {
+        const sub = normalizarSubcategoria(item.subcategoria || '') || 'Outros';
+        if (!acc[sub]) acc[sub] = 0;
+        acc[sub] += parseValor(item.valor);
+        return acc;
+      }, {});
+
+      const dataPizza = Object.keys(subMapDaCategoria)
+        .map((sub) => ({
+          name: sub,
+          value: Number(subMapDaCategoria[sub].toFixed(2)),
+        }))
+        .filter((item) => item.value > 0);
+
+      const totalDaCategoria = dataPizza.reduce((sum, item) => sum + item.value, 0);
+
+      return {
+        categoria: cat,
+        total: totalDaCategoria,
+        dados: dataPizza,
+      };
+    }).filter((pizza) => pizza.total > 0);
+  }, [dadosCatMap, dadosParaGraficos]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
-        
+
         {/* BOTÃO DE VOLTAR REDONDO COM ÍCONE */}
         <div className="mb-6">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
             title="Voltar para o Menu"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
         </div>
-        
+
         <h1 className="text-2xl font-bold mb-8 text-center text-blue-400 tracking-wide">
           Consulta de Gastos e Relatórios
         </h1>
@@ -220,9 +426,9 @@ export default function ResumoPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-8 bg-gray-900/40 p-5 rounded-xl border border-gray-700/50 shadow-inner">
           <div>
             <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Responsável</label>
-            <select 
-              value={responsavel} 
-              onChange={(e) => setResponsavel(e.target.value)} 
+            <select
+              value={responsavel}
+              onChange={(e) => setResponsavel(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             >
               <option className="bg-gray-800 text-gray-200" value="Davi">Davi</option>
@@ -232,9 +438,9 @@ export default function ResumoPage() {
 
           <div>
             <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Ano</label>
-            <select 
-              value={ano} 
-              onChange={(e) => setAno(e.target.value)} 
+            <select
+              value={ano}
+              onChange={(e) => setAno(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             >
               {anosOpcoes.map((a) => (
@@ -243,7 +449,7 @@ export default function ResumoPage() {
             </select>
           </div>
 
-          <button 
+          <button
             onClick={carregarDados}
             disabled={carregando}
             className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 h-11 disabled:opacity-50"
@@ -262,14 +468,14 @@ export default function ResumoPage() {
         {dadosGastos.length > 0 && (
           <>
             <div className="flex justify-center gap-3 mb-8">
-              <button 
+              <button
                 onClick={() => setVisao('tabela')}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'tabela' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
               >
                 <Table className="w-4 h-4" />
                 Tabela de Gastos
               </button>
-              <button 
+              <button
                 onClick={() => setVisao('graficos')}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm ${visao === 'graficos' ? 'bg-blue-500 text-white shadow-blue-900/20' : 'bg-gray-700/60 hover:bg-gray-700 text-gray-300'}`}
               >
@@ -279,64 +485,89 @@ export default function ResumoPage() {
             </div>
 
             {visao === 'tabela' && (
-              <div className="overflow-x-auto">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">
-                 N° de registro(s): {dadosFiltradosTabela.length}.
-                </p>
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-700/80 text-blue-400 text-xs font-bold uppercase tracking-wider">
-                      <th className="p-3">Mês</th>
-                      <th className="p-3">Categoria</th>
-                      <th className="p-3">Sub-categoria</th>
-                      <th className="p-3">Motivo</th>
-                      <th className="p-3">Valor (R$)</th>
-                    </tr>
-                    <tr className="bg-gray-900/50 border-b border-gray-700/80">
-                      <th className="p-2">
-                        <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option className="bg-gray-800 text-gray-200" value="">Todos os Meses</option>
-                          {mesesOpcoes.map((m) => <option className="bg-gray-800 text-gray-200" key={m} value={m}>{m}</option>)}
-                        </select>
-                      </th>
-                      <th className="p-2">
-                        <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option className="bg-gray-800 text-gray-200" value="">Todas as Categorias</option>
-                          {categoriaOpcoes.map((c) => <option className="bg-gray-800 text-gray-200" key={c} value={c}>{c}</option>)}
-                        </select>
-                      </th>
-                      <th className="p-2">
-                        <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option className="bg-gray-800 text-gray-200" value="">Todas as Sub-categorias</option>
-                          {subcategoriaOpcoes.map((s) => <option className="bg-gray-800 text-gray-200" key={s} value={s}>{s}</option>)}
-                        </select>
-                      </th>
-                      <th className="p-2">
-                        <select value={filtroMotivo} onChange={(e) => setFiltroMotivo(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500">
-                          <option className="bg-gray-800 text-gray-200" value="">Todos os Motivos</option>
-                          {motivoOpcoes.map((mo) => <option className="bg-gray-800 text-gray-200" key={mo} value={mo}>{mo}</option>)}
-                        </select>
-                      </th>
-                      
-                      <th className="p-2 text-left">
-                        <span className="bg-blue-900/30 border border-blue-500/40 text-blue-300 font-bold px-3 py-1.5 rounded-lg text-xs inline-block w-full text-center shadow-sm">
-                          Total: {valorTotalFiltrado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dadosFiltradosTabela.map((gasto, index) => (
-                      <tr key={index} className="border-b border-gray-700/40 hover:bg-gray-700/20 transition-colors">
-                        <td className="p-3 text-sm text-gray-300">{gasto.mes}</td>
-                        <td className="p-3 text-sm text-gray-300">{gasto.categoria}</td>
-                        <td className="p-3 text-sm text-gray-300">{gasto.subcategoria}</td>
-                        <td className="p-3 text-sm text-gray-300">{gasto.motivo}</td>
-                        <td className="p-3 text-sm font-semibold text-red-300">{gasto.valor}</td>
+              <div className="space-y-4">
+
+                {/* BARRA DE FILTROS (seleção múltipla) */}
+                <div className="bg-gray-900/40 p-5 rounded-2xl border border-gray-700/50 shadow-inner space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Filtros</span>
+                    <button
+                      type="button"
+                      onClick={limparTodosFiltros}
+                      disabled={totalFiltrosAtivos === 0}
+                      className="text-[10px] font-bold uppercase tracking-wider text-blue-400 hover:text-blue-300 disabled:opacity-30"
+                    >
+                      Limpar tudo
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <FiltroMultiplo
+                      rotulo="Todos os Meses"
+                      opcoes={mesesOpcoes}
+                      selecionados={filtroMes}
+                      onChange={setFiltroMes}
+                    />
+                    <FiltroMultiplo
+                      rotulo="Todas as Categorias"
+                      opcoes={categoriaOpcoes}
+                      selecionados={filtroCategoria}
+                      onChange={setFiltroCategoria}
+                    />
+                    <FiltroMultiplo
+                      rotulo="Todas as Sub-categorias"
+                      opcoes={subcategoriaOpcoes}
+                      selecionados={filtroSubcategoria}
+                      onChange={setFiltroSubcategoria}
+                    />
+                    <FiltroMultiplo
+                      rotulo="Todos os Motivos"
+                      opcoes={motivoOpcoes}
+                      selecionados={filtroMotivo}
+                      onChange={setFiltroMotivo}
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-700/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                      N° de registro(s): {dadosFiltradosTabela.length}.
+                    </p>
+                    <span className="bg-blue-900/30 border border-blue-500/40 text-blue-300 font-bold px-4 py-1.5 rounded-lg text-xs shadow-sm">
+                      Total: {valorTotalFiltrado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-700/80 text-blue-400 text-xs font-bold uppercase tracking-wider">
+                        <th className="p-3">Mês</th>
+                        <th className="p-3">Categoria</th>
+                        <th className="p-3">Sub-categoria</th>
+                        <th className="p-3">Motivo</th>
+                        <th className="p-3">Valor (R$)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {dadosFiltradosTabela.map((gasto, index) => (
+                        <tr key={index} className="border-b border-gray-700/40 hover:bg-gray-700/20 transition-colors">
+                          <td className="p-3 text-sm text-gray-300">{gasto.mes}</td>
+                          <td className="p-3 text-sm text-gray-300">{gasto.categoria}</td>
+                          <td className="p-3 text-sm text-gray-300">{gasto.subcategoria}</td>
+                          <td className="p-3 text-sm text-gray-300">{gasto.motivo}</td>
+                          <td className="p-3 text-sm font-semibold text-red-300">{gasto.valor}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {dadosFiltradosTabela.length === 0 && (
+                    <p className="text-center text-sm text-gray-500 py-8">
+                      Nenhum gasto corresponde aos filtros selecionados.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -346,8 +577,8 @@ export default function ResumoPage() {
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Filtrar Período dos Gráficos:</span>
                   <div className="relative w-full md:w-64">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <select 
-                      value={filtroPeriodoGrafico} 
+                    <select
+                      value={filtroPeriodoGrafico}
                       onChange={(e) => setFiltroPeriodoGrafico(e.target.value)}
                       className="bg-gray-800 border border-gray-700 rounded-lg py-2.5 pl-10 pr-3 text-gray-200 text-sm outline-none focus:border-blue-500 w-full appearance-none"
                     >
@@ -364,24 +595,24 @@ export default function ResumoPage() {
                     Gastos por Categoria: Realizado vs Planejado ({filtroPeriodoGrafico === 'TODOS' ? 'Ano Todo' : filtroPeriodoGrafico})
                   </h2>
                   <p className="text-xs text-center text-gray-400 mb-6">Compara os gastos lançados com as metas definidas</p>
-                  
+
                   <div className="w-full h-96">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={dadosGraficoCategorias}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
                         <XAxis dataKey="categoria" stroke="#9CA3AF" interval={0} angle={-15} textAnchor="end" height={60} tick={{fontSize: 11}} axisLine={false} tickLine={false} />
                         <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
-                        <Tooltip 
+                        <Tooltip
                           formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
-                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }} 
+                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }}
                         />
                         <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                        
+
                         <Bar dataKey="Realizado" fill="#10B981" radius={[4, 4, 0, 0]}>
                           {dadosGraficoCategorias.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={entry.Realizado > entry.Planejado ? '#EF4444' : '#10B981'} 
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.Realizado > entry.Planejado ? '#EF4444' : '#10B981'}
                             />
                           ))}
                         </Bar>
@@ -402,9 +633,9 @@ export default function ResumoPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
                         <XAxis dataKey="subcategoria" stroke="#9CA3AF" interval={0} angle={-45} textAnchor="end" height={80} tick={{fontSize: 10}} axisLine={false} tickLine={false} />
                         <YAxis stroke="#9CA3AF" axisLine={false} tickLine={false} />
-                        <Tooltip 
+                        <Tooltip
                           formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
-                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }} 
+                          contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }}
                         />
                         <Legend wrapperStyle={{ paddingTop: '20px' }} />
                         <Bar dataKey="Total" fill="#818CF8" radius={[4, 4, 0, 0]} />
@@ -427,7 +658,7 @@ export default function ResumoPage() {
                           <p className="text-sm font-semibold text-emerald-400 mb-4">
                             Total: R$ {pizza.total.toFixed(2).replace('.', ',')}
                           </p>
-                          
+
                           <div className="w-full h-64">
                             <ResponsiveContainer width="100%" height="100%">
                               <PieChart>
@@ -444,7 +675,7 @@ export default function ResumoPage() {
                                     <Cell key={`cell-${idx}`} fill={CORES_PIZZA[idx % CORES_PIZZA.length]} />
                                   ))}
                                 </Pie>
-                                <Tooltip 
+                                <Tooltip
                                   formatter={(value: any, name: any) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, name]}
                                   contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#FFF', borderRadius: '0.5rem' }}
                                 />
