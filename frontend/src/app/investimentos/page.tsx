@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
-import { Plus, Minus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, Minus, X, AlertCircle, CheckCircle, Loader2, SplitSquareHorizontal } from 'lucide-react';
 
 export default function InvestimentosPage() {
   const [isAdicionando, setIsAdicionando] = useState(false);
@@ -26,6 +26,12 @@ export default function InvestimentosPage() {
   const [invMes, setInvMes] = useState('MARÇO');
   const [invResponsavel, setInvResponsavel] = useState('Davi');
   const [invValor, setInvValor] = useState('');
+
+  // Divisão manual: em vez de um valor total dividido 70/30, a tela mostra
+  // dois campos e manda os valores exatos de Futuro e Pessoal.
+  const [divisaoManual, setDivisaoManual] = useState(false);
+  const [invFuturo, setInvFuturo] = useState('');
+  const [invPessoal, setInvPessoal] = useState('');
   
   // Alterado para suportar estado de carregamento e erro
   const [invMensagem, setInvMensagem] = useState('');
@@ -151,14 +157,28 @@ export default function InvestimentosPage() {
       const response = await fetch(`${apiUrl}/api/investimento`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ano: Number(invAno), mes: mesFormatado, responsavel: invResponsavel, valor: Number(invValor) }),
+        body: JSON.stringify(
+          divisaoManual
+            ? {
+                ano: Number(invAno),
+                mes: mesFormatado,
+                responsavel: invResponsavel,
+                valorFuturo: Number(invFuturo || 0),
+                valorPessoal: Number(invPessoal || 0),
+              }
+            : { ano: Number(invAno), mes: mesFormatado, responsavel: invResponsavel, valor: Number(invValor) }
+        ),
       });
 
       const data = await response.json();
       if (response.ok) {
         setInvStatus('sucesso');
-        setInvMensagem(`Investimento registrado! Futuro: R$ ${data.valorFuturo.toFixed(2)} | Pessoal: R$ ${data.valorPessoal.toFixed(2)}`);
+        setInvMensagem(
+          `Aporte registrado! Futuro: ${formatCurrency(data.aporteFuturo ?? 0)} | Pessoal: ${formatCurrency(data.aportePessoal ?? 0)}`
+        );
         setInvValor('');
+        setInvFuturo('');
+        setInvPessoal('');
         carregarDashboard();
       } else {
         setInvStatus('erro');
@@ -282,26 +302,71 @@ export default function InvestimentosPage() {
                   {mesesOpcoes.map((m) => <option className="bg-gray-800 text-gray-200" key={m} value={m}>{m}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Valor Total a Investir (R$)</label>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  placeholder="Ex: 1000,00" 
-                  value={invValor} 
-                  onChange={(e) => setInvValor(e.target.value)} 
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
-                  required 
-                />
+              {!divisaoManual ? (
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Valor Total a Investir (R$)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="Ex: 1000,00" 
+                    value={invValor} 
+                    onChange={(e) => setInvValor(e.target.value)} 
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                    required 
+                  />
+                  <p className="text-[11px] text-gray-500 mt-2">Será dividido em 70% Futuro e 30% Pessoal.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Futuro (R$)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0,00" 
+                        value={invFuturo} 
+                        onChange={(e) => setInvFuturo(e.target.value)} 
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Pessoal (R$)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0,00" 
+                        value={invPessoal} 
+                        onChange={(e) => setInvPessoal(e.target.value)} 
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Total do aporte: <span className="text-gray-300 font-semibold">{formatCurrency(Number(invFuturo || 0) + Number(invPessoal || 0))}</span>
+                  </p>
+                </div>
+              )}
+              <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                <button 
+                  type="submit" 
+                  disabled={invStatus === 'carregando' || (divisaoManual && Number(invFuturo || 0) + Number(invPessoal || 0) <= 0)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {invStatus === 'carregando' ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                  {invStatus === 'carregando' ? 'Enviando...' : 'Salvar Investimento'}
+                </button>
+
+                <button 
+                  type="button" 
+                  onClick={() => { setDivisaoManual(!divisaoManual); setInvMensagem(''); setInvStatus(''); }}
+                  title={divisaoManual ? 'Voltar para valor único com divisão 70/30' : 'Escolher quanto vai para Futuro e para Pessoal'}
+                  className={`sm:w-auto px-4 p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border flex items-center justify-center gap-2 ${divisaoManual ? 'bg-blue-600/15 border-blue-500/40 text-blue-300' : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'}`}
+                >
+                  <SplitSquareHorizontal className="w-4 h-4" />
+                  {divisaoManual ? 'Auto' : 'Manual'}
+                </button>
               </div>
-              <button 
-                type="submit" 
-                disabled={invStatus === 'carregando'}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {invStatus === 'carregando' ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                {invStatus === 'carregando' ? 'Enviando...' : 'Salvar Investimento'}
-              </button>
             </form>
             {invMensagem && (
               <div className={`mt-6 p-4 rounded-xl font-medium text-sm border flex items-center justify-center gap-3 ${invStatus === 'erro' ? 'bg-red-900/20 border-red-500/30 text-red-400' : invStatus === 'sucesso' ? 'bg-emerald-900/20 border-emerald-500/30 text-emerald-400' : 'bg-blue-900/20 border-blue-500/30 text-blue-400'}`}>
