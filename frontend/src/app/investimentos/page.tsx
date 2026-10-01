@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
-import { ArrowLeft, Plus, Minus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, Minus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 export default function InvestimentosPage() {
   const [isAdicionando, setIsAdicionando] = useState(false);
@@ -218,15 +217,8 @@ export default function InvestimentosPage() {
         
         {/* Cabeçalho */}
         <div className="flex flex-col lg:flex-row justify-between items-center mb-8 border-b border-gray-700/50 pb-6 gap-6">
-          <div className="flex w-full lg:w-1/4 justify-start">
-            <Link 
-              href="/" 
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
-              title="Voltar para o Menu"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-          </div>
+          <div className="hidden lg:block lg:w-1/4" />
+
           
           <h1 className="text-2xl font-bold text-blue-400 tracking-wide w-full lg:w-2/4 text-center">
             Dashboard de Investimentos

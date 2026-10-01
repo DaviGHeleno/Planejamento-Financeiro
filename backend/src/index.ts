@@ -30,6 +30,32 @@ function textoSeguro(valor: unknown): string {
 }
 
 // ============================================================================
+// RESPONSÁVEIS ACEITOS (evita montar nome de aba com texto arbitrário)
+// ============================================================================
+const RESPONSAVEIS_VALIDOS = ['Davi', 'Stella'];
+
+// ============================================================================
+// FUNÇÃO AUXILIAR: VALOR NO FORMATO DA PLANILHA (1.234,56)
+// Aceita "123", "12,5", "12.5" e "1.234,56".
+// ============================================================================
+function formatarValorPlanilha(valor: unknown): string {
+  const bruto = (valor ?? '').toString().replace('R$', '').trim();
+  if (bruto === '') return '';
+
+  let limpo = bruto.replace(/\s/g, '');
+
+  if (limpo.includes(',')) {
+    // Formato brasileiro: ponto é separador de milhar.
+    limpo = limpo.replace(/\./g, '').replace(',', '.');
+  }
+
+  const numero = parseFloat(limpo);
+  if (isNaN(numero)) return '';
+
+  return numero.toFixed(2).replace('.', ',');
+}
+
+// ============================================================================
 // FUNÇÃO AUXILIAR: REGISTRO DE HISTÓRICO AUTOMÁTICO
 // ============================================================================
 async function registrarHistorico(acao: string, descricao: string, valor: string) {
@@ -322,7 +348,10 @@ app.get('/api/gastos/:responsavel/:ano', async (req: Request, res: Response) => 
 
     const rows = response.data.values || [];
     
-    const gastos = rows.map((row) => ({
+    // "linha" é o número real da linha na planilha (os dados começam em A48).
+    // É o que permite editar o registro depois.
+    const gastos = rows.map((row, indice) => ({
+      linha: indice + 48,
       mes: row[0] || '',
       categoria: row[1] || '',
       subcategoria: row[2] || '',
@@ -409,6 +438,207 @@ app.post('/api/gasto', async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).send({ error: 'Erro ao adicionar gastos.' });
+  }
+});
+
+// 5.1. EDITAR UM GASTO JÁ LANÇADO
+// Regrava uma única linha. Antes de escrever, confere se o conteúdo atual da
+// planilha ainda é o mesmo que o front-end carregou — se alguém editou a
+// planilha nesse meio-tempo, recusa em vez de sobrescrever.
+app.put('/api/gasto', async (req: Request, res: Response) => {
+  try {
+    const { responsavel, ano, linha, original, novo } = req.body;
+
+    if (!RESPONSAVEIS_VALIDOS.includes(responsavel)) {
+      return res.status(400).send({ error: 'Responsável inválido.' });
+    }
+
+    const numeroLinha = Number(linha);
+    if (!Number.isInteger(numeroLinha) || numeroLinha < 48) {
+      return res.status(400).send({ error: 'Linha inválida.' });
+    }
+
+    if (!novo || !original) {
+      return res.status(400).send({ error: 'Dados do gasto não enviados.' });
+    }
+
+    const anoAbreviado = (ano || '').toString().length === 4 ? ano.toString().slice(2) : (ano || '').toString();
+    if (!/^[0-9]{2}$/.test(anoAbreviado)) {
+      return res.status(400).send({ error: 'Ano inválido.' });
+    }
+
+    const abaNome = `Mensal ${anoAbreviado} - ${responsavel}`;
+
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: 'v4', auth: client as any });
+
+    const atual = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${abaNome}'!A${numeroLinha}:F${numeroLinha}`,
+    });
+
+    const linhaAtual = (atual.data.values || [[]])[0] || [];
+    const comparar = (valor: unknown) => (valor ?? '').toString().trim();
+
+    const originalNaPlanilha = [
+      comparar(linhaAtual[0]),
+      comparar(linhaAtual[1]),
+      comparar(linhaAtual[2]),
+      comparar(linhaAtual[3]),
+      comparar(linhaAtual[4]),
+      comparar(linhaAtual[5]),
+    ];
+
+    const originalDoCliente = [
+      comparar(original.mes),
+      comparar(original.categoria),
+      comparar(original.subcategoria),
+      comparar(original.motivo),
+      comparar(original.valor),
+      comparar(original.descricao),
+    ];
+
+    const mudouPorFora = originalNaPlanilha.some((v, i) => v !== originalDoCliente[i]);
+
+    if (mudouPorFora) {
+      return res.status(409).send({
+        error: 'Esta linha foi alterada na planilha depois que você carregou os dados. Recarregue o ano e tente de novo.',
+      });
+    }
+
+    // Mantém o estilo da célula: se o valor original já tinha "R$", a edição
+    // continua com "R$"; se não tinha, continua sem.
+    const tinhaPrefixo = /^R\$/i.test(originalDoCliente[4]);
+    const valorNumerico = formatarValorPlanilha(novo.valor);
+    const valorFormatado = tinhaPrefixo && valorNumerico !== '' ? `R$ ${valorNumerico}` : valorNumerico;
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${abaNome}'!A${numeroLinha}:F${numeroLinha}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: [[
+          textoSeguro(novo.mes),
+          textoSeguro(novo.categoria),
+          textoSeguro(novo.subcategoria),
+          textoSeguro(novo.motivo),
+          valorFormatado,
+          textoSeguro(novo.descricao),
+        ]],
+      },
+    });
+
+    await registrarHistorico(
+      'GASTO (EDIÇÃO)',
+      `Linha ${numeroLinha} da aba "${abaNome}": de [${originalDoCliente.slice(0, 5).join(' | ')}] para [${comparar(novo.mes)} | ${comparar(novo.categoria)} | ${comparar(novo.subcategoria)} | ${comparar(novo.motivo)} | ${valorFormatado}]`,
+      `R$ ${valorFormatado}`
+    );
+
+    res.json({
+      message: 'Gasto atualizado com sucesso!',
+      gasto: {
+        linha: numeroLinha,
+        mes: comparar(novo.mes),
+        categoria: comparar(novo.categoria),
+        subcategoria: comparar(novo.subcategoria),
+        motivo: comparar(novo.motivo),
+        valor: valorFormatado,
+        descricao: comparar(novo.descricao),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: 'Erro ao atualizar o gasto.' });
+  }
+});
+
+// 5.2. EXCLUIR UM GASTO
+// Apaga a linha inteira da planilha (as linhas de baixo sobem uma posição).
+// Confere o conteúdo atual antes de apagar, para não excluir a linha errada
+// caso a planilha tenha sido mexida depois do carregamento.
+app.delete('/api/gasto', async (req: Request, res: Response) => {
+  try {
+    const { responsavel, ano, linha, original } = req.body;
+
+    if (!RESPONSAVEIS_VALIDOS.includes(responsavel)) {
+      return res.status(400).send({ error: 'Responsável inválido.' });
+    }
+
+    const numeroLinha = Number(linha);
+    if (!Number.isInteger(numeroLinha) || numeroLinha < 48) {
+      return res.status(400).send({ error: 'Linha inválida.' });
+    }
+
+    if (!original) {
+      return res.status(400).send({ error: 'Dados do gasto não enviados.' });
+    }
+
+    const anoAbreviado = (ano || '').toString().length === 4 ? ano.toString().slice(2) : (ano || '').toString();
+    if (!/^[0-9]{2}$/.test(anoAbreviado)) {
+      return res.status(400).send({ error: 'Ano inválido.' });
+    }
+
+    const abaNome = `Mensal ${anoAbreviado} - ${responsavel}`;
+
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: 'v4', auth: client as any });
+
+    const spreadsheetInfo = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const aba = spreadsheetInfo.data.sheets?.find((s) => s.properties?.title === abaNome);
+
+    if (!aba || aba.properties?.sheetId === undefined || aba.properties?.sheetId === null) {
+      return res.status(404).send({ error: `Aba "${abaNome}" não encontrada.` });
+    }
+
+    const atual = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${abaNome}'!A${numeroLinha}:F${numeroLinha}`,
+    });
+
+    const linhaAtual = (atual.data.values || [[]])[0] || [];
+    const comparar = (valor: unknown) => (valor ?? '').toString().trim();
+
+    const campos: Array<'mes' | 'categoria' | 'subcategoria' | 'motivo' | 'valor' | 'descricao'> =
+      ['mes', 'categoria', 'subcategoria', 'motivo', 'valor', 'descricao'];
+
+    const mudouPorFora = campos.some(
+      (campo, i) => comparar(linhaAtual[i]) !== comparar(original[campo])
+    );
+
+    if (mudouPorFora) {
+      return res.status(409).send({
+        error: 'Esta linha foi alterada na planilha depois que você carregou os dados. Recarregue o ano e tente de novo.',
+      });
+    }
+
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId: aba.properties.sheetId,
+                dimension: 'ROWS',
+                startIndex: numeroLinha - 1, // a API conta a partir do zero
+                endIndex: numeroLinha,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    await registrarHistorico(
+      'GASTO (EXCLUSÃO)',
+      `Linha ${numeroLinha} da aba "${abaNome}" excluída: [${campos.slice(0, 5).map((c) => comparar(original[c])).join(' | ')}]`,
+      `R$ ${comparar(original.valor).replace(/^R\$\s*/i, '')}`
+    );
+
+    res.json({ message: 'Gasto excluído com sucesso!', linha: numeroLinha });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: 'Erro ao excluir o gasto.' });
   }
 });
 

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import * as XLSX from 'xlsx';
-import { ArrowLeft, Plus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface ItemGasto {
   id: string;
@@ -202,16 +201,6 @@ export default function GastosPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
-        
-        <div className="mb-6">
-          <Link 
-            href="/" 
-            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
-            title="Voltar para o Menu"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        </div>
         
         <h1 className="text-2xl font-bold mb-8 text-center text-blue-400 tracking-wide">
           Lançamento de Gastos Mensais

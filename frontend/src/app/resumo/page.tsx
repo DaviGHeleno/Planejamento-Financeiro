@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
-import { ArrowLeft, Table, BarChart3, Calendar, AlertCircle, ChevronDown, ChevronRight, Check, FileText, Pencil, Save, X, List, Trash2 } from 'lucide-react';
+import { Table, BarChart3, Calendar, AlertCircle, ChevronDown, ChevronRight, Check, FileText, Pencil, Save, X, List, Trash2 } from 'lucide-react';
 
 const CORES_PIZZA = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C', '#818CF8', '#C084FC'];
 
@@ -628,17 +627,6 @@ export default function ResumoPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700/50">
-
-        {/* BOTÃO DE VOLTAR REDONDO COM ÍCONE */}
-        <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
-            title="Voltar para o Menu"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-        </div>
 
         <h1 className="text-2xl font-bold mb-8 text-center text-blue-400 tracking-wide">
           Consulta de Gastos e Relatórios

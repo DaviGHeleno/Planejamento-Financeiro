@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Target, CheckCircle2, Circle, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Target, CheckCircle2, Circle, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 
 interface ObjetivoItem {
   id: number;
@@ -95,15 +94,8 @@ export default function ObjetivosPage() {
         
         {/* CABEÇALHO */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-700/50 pb-6 gap-4">
-          <div className="w-full md:w-1/3 flex justify-start">
-            <Link 
-              href="/" 
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-900/50 hover:bg-gray-700 text-gray-400 hover:text-blue-400 transition-all border border-gray-700/50 hover:border-blue-500/50 shadow-sm"
-              title="Voltar para o Menu"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-          </div>
+          <div className="hidden md:block md:w-1/3" />
+
           
           <h1 className="text-2xl font-bold text-blue-400 tracking-wide w-full md:w-1/3 text-center flex items-center justify-center gap-2">
             <Target className="w-6 h-6" /> Objetivos do Casal
