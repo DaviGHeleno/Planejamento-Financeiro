@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useValores } from '../../components/ValoresContext';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell, PieChart, Pie } from 'recharts';
 import { Table, BarChart3, Calendar, AlertCircle, ChevronDown, ChevronRight, Check, FileText, Pencil, Save, X, List, Trash2 } from 'lucide-react';
 
@@ -176,6 +177,7 @@ function CampoComOutro({ rotulo, opcoes, valor, onChange }: CampoComOutroProps) 
 }
 
 export default function ResumoPage() {
+  const { mascarar } = useValores();
   const [responsavel, setResponsavel] = useState('Davi');
   const [ano, setAno] = useState('26');
   const [dadosGastos, setDadosGastos] = useState<any[]>([]);
@@ -742,7 +744,7 @@ export default function ResumoPage() {
                       N° de registro(s): {dadosFiltradosTabela.length}.
                     </p>
                     <span className="bg-blue-900/30 border border-blue-500/40 text-blue-300 font-bold px-4 py-1.5 rounded-lg text-xs shadow-sm">
-                      Total: {valorTotalFiltrado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      Total: {mascarar(valorTotalFiltrado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))}
                     </span>
                   </div>
                 </div>
@@ -789,7 +791,7 @@ export default function ResumoPage() {
                               <td className="p-3 text-sm text-gray-300">{gasto.categoria}</td>
                               <td className="p-3 text-sm text-gray-300">{gasto.subcategoria}</td>
                               <td className="p-3 text-sm text-gray-300">{gasto.motivo}</td>
-                              <td className="p-3 text-sm font-semibold text-red-300">{formatarMoeda(gasto.valor)}</td>
+                              <td className="p-3 text-sm font-semibold text-red-300">{mascarar(formatarMoeda(gasto.valor))}</td>
                             </tr>
 
                             {expandida && (
@@ -1076,7 +1078,7 @@ export default function ResumoPage() {
                         <div key={index} className="bg-gray-800/60 p-5 rounded-2xl border border-gray-700/50 flex flex-col items-center shadow-md">
                           <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300 mb-1">{pizza.categoria}</h3>
                           <p className="text-sm font-semibold text-emerald-400 mb-4">
-                            Total: R$ {pizza.total.toFixed(2).replace('.', ',')}
+                            Total: {mascarar(`R$ ${pizza.total.toFixed(2).replace('.', ',')}`)}
                           </p>
 
                           <div className="w-full h-64">

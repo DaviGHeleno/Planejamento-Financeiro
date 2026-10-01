@@ -165,12 +165,56 @@ app.get('/api/investimentos/dashboard', async (req: Request, res: Response) => {
   }
 });
 
-// 2. ESCREVER INVESTIMENTO (Divisão 70/30) + HISTÓRICO COM SOMA
+// 2. ESCREVER INVESTIMENTO (divisão padrão 70/30, ajustável) + HISTÓRICO COM SOMA
 app.post('/api/investimento', async (req: Request, res: Response) => {
   try {
-    const { ano, mes, responsavel, valor } = req.body;
-    const aporteFuturo = valor * 0.70;
-    const aportePessoal = valor * 0.30;
+    const { ano, mes, responsavel, valor, percentualFuturo, valorFuturo, valorPessoal } = req.body;
+
+    // Três formas de informar o aporte, nesta ordem de prioridade:
+    // 1) valorFuturo + valorPessoal: valores exatos escolhidos na tela;
+    // 2) valor + percentualFuturo: divisão por percentual;
+    // 3) valor apenas: divisão padrão 70% Futuro / 30% Pessoal.
+    const divisaoManual = valorFuturo !== undefined || valorPessoal !== undefined;
+
+    let aporteFuturo = 0;
+    let aportePessoal = 0;
+    let descricaoDivisao = '';
+
+    if (divisaoManual) {
+      aporteFuturo = Number(valorFuturo || 0);
+      aportePessoal = Number(valorPessoal || 0);
+
+      if (isNaN(aporteFuturo) || isNaN(aportePessoal) || aporteFuturo < 0 || aportePessoal < 0) {
+        return res.status(400).send({ error: 'Valores de Futuro e Pessoal inválidos.' });
+      }
+
+      if (aporteFuturo + aportePessoal <= 0) {
+        return res.status(400).send({ error: 'Informe ao menos um valor maior que zero.' });
+      }
+
+      aporteFuturo = Number(aporteFuturo.toFixed(2));
+      aportePessoal = Number(aportePessoal.toFixed(2));
+      descricaoDivisao = 'divisão manual';
+    } else {
+      const valorAporte = Number(valor);
+      if (isNaN(valorAporte) || valorAporte <= 0) {
+        return res.status(400).send({ error: 'Valor de aporte inválido.' });
+      }
+
+      const percentual = percentualFuturo === undefined || percentualFuturo === null
+        ? 70
+        : Number(percentualFuturo);
+
+      if (isNaN(percentual) || percentual < 0 || percentual > 100) {
+        return res.status(400).send({ error: 'Percentual do Futuro inválido (use de 0 a 100).' });
+      }
+
+      aporteFuturo = Number(((valorAporte * percentual) / 100).toFixed(2));
+      aportePessoal = Number((valorAporte - aporteFuturo).toFixed(2));
+      descricaoDivisao = `Futuro ${percentual}% / Pessoal ${100 - percentual}%`;
+    }
+
+    const valorAporte = Number((aporteFuturo + aportePessoal).toFixed(2));
 
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const linhaMes = meses.indexOf(mes) + 3; 
@@ -227,10 +271,19 @@ app.post('/api/investimento', async (req: Request, res: Response) => {
     await registrarHistorico(
       'INVESTIMENTO',
       `${responsavel} realizou aporte referente a ${mes}/${ano}`,
-      `R$ ${valor.toFixed(2).replace('.', ',')} (Futuro: R$ ${aporteFuturo.toFixed(2)} | Pessoal: R$ ${aportePessoal.toFixed(2)})`
+      `R$ ${valorAporte.toFixed(2).replace('.', ',')} (${descricaoDivisao} — Futuro: R$ ${aporteFuturo.toFixed(2)} | Pessoal: R$ ${aportePessoal.toFixed(2)})`
     );
 
-    res.json({ message: 'Investimento registrado e somado!', valorFuturo: novoValorFuturo, valorPessoal: novoValorPessoal });
+    res.json({
+      message: 'Investimento registrado e somado!',
+      // Acumulado da célula depois do aporte:
+      valorFuturo: novoValorFuturo,
+      valorPessoal: novoValorPessoal,
+      // Quanto entrou agora:
+      aporteFuturo,
+      aportePessoal,
+      aporteTotal: valorAporte,
+    });
   } catch (error) {
     res.status(500).send({ error: 'Erro ao registrar investimento.' });
   }

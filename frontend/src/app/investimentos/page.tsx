@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useValores } from '../../components/ValoresContext';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { Plus, Minus, X, AlertCircle, CheckCircle, Loader2, SplitSquareHorizontal } from 'lucide-react';
 
 export default function InvestimentosPage() {
+  const { mascarar } = useValores();
+
   const [isAdicionando, setIsAdicionando] = useState(false);
   const [isResgatando, setIsResgatando] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -174,7 +177,7 @@ export default function InvestimentosPage() {
       if (response.ok) {
         setInvStatus('sucesso');
         setInvMensagem(
-          `Aporte registrado! Futuro: ${formatCurrency(data.aporteFuturo ?? 0)} | Pessoal: ${formatCurrency(data.aportePessoal ?? 0)}`
+          `Aporte registrado! Futuro: ${mascarar(formatCurrency(data.aporteFuturo ?? 0))} | Pessoal: ${mascarar(formatCurrency(data.aportePessoal ?? 0))}`
         );
         setInvValor('');
         setInvFuturo('');
@@ -343,7 +346,7 @@ export default function InvestimentosPage() {
                     </div>
                   </div>
                   <p className="text-[11px] text-gray-500">
-                    Total do aporte: <span className="text-gray-300 font-semibold">{formatCurrency(Number(invFuturo || 0) + Number(invPessoal || 0))}</span>
+                    Total do aporte: <span className="text-gray-300 font-semibold">{mascarar(formatCurrency(Number(invFuturo || 0) + Number(invPessoal || 0)))}</span>
                   </p>
                 </div>
               )}
@@ -364,7 +367,7 @@ export default function InvestimentosPage() {
                   className={`sm:w-auto px-4 p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border flex items-center justify-center gap-2 ${divisaoManual ? 'bg-blue-600/15 border-blue-500/40 text-blue-300' : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'}`}
                 >
                   <SplitSquareHorizontal className="w-4 h-4" />
-                  {divisaoManual ? 'Auto' : 'Manual'}
+                  {divisaoManual ? 'Divisão 70/30' : 'Dividir manual'}
                 </button>
               </div>
             </form>
@@ -453,25 +456,25 @@ export default function InvestimentosPage() {
               <div>
                 <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 text-center">Total Davi</h3>
                 <p className="text-2xl font-bold text-blue-400 text-center mb-5">
-                  {totalDaviNum > 0 ? formatCurrency(totalDaviNum) : (totais.daviFuturo || 'R$ 0,00')}
+                  {mascarar(totalDaviNum > 0 ? formatCurrency(totalDaviNum) : (totais.daviFuturo || 'R$ 0,00'))}
                 </p>
               </div>
               <div className="border-t border-gray-700/80 pt-4 space-y-2 text-xs">
                 <div className="flex justify-between items-center pb-2 border-b border-gray-700/50">
                   <span className="text-emerald-400 font-medium">Total Futuro:</span>
-                  <span className="font-bold text-emerald-400">{totais.daviFuturo || 'R$ 0,00'}</span>
+                  <span className="font-bold text-emerald-400">{mascarar(totais.daviFuturo || 'R$ 0,00')}</span>
                 </div>
                 <div className="flex justify-between items-center pl-2 pt-1">
                   <span className="text-gray-500">└ Reserva:</span>
-                  <span className="font-medium text-emerald-400/80">{totais.daviReserva || 'R$ 0,00'}</span>
+                  <span className="font-medium text-emerald-400/80">{mascarar(totais.daviReserva || 'R$ 0,00')}</span>
                 </div>
                 <div className="flex justify-between items-center pl-2 pb-2 border-b border-gray-700/50">
                   <span className="text-gray-500">└ Casamento:</span>
-                  <span className="font-medium text-emerald-400/80">{totais.daviCasamento || 'R$ 0,00'}</span>
+                  <span className="font-medium text-emerald-400/80">{mascarar(totais.daviCasamento || 'R$ 0,00')}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1">
                   <span className="text-amber-400/80 font-medium">Pessoal:</span>
-                  <span className="font-bold text-amber-400/90">{totais.daviPresente || 'R$ 0,00'}</span>
+                  <span className="font-bold text-amber-400/90">{mascarar(totais.daviPresente || 'R$ 0,00')}</span>
                 </div>
               </div>
             </div>
@@ -481,25 +484,25 @@ export default function InvestimentosPage() {
               <div>
                 <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 text-center">Total Stella</h3>
                 <p className="text-2xl font-bold text-indigo-400 text-center mb-5">
-                  {totalStellaNum > 0 ? formatCurrency(totalStellaNum) : (totais.stellaFuturo || 'R$ 0,00')}
+                  {mascarar(totalStellaNum > 0 ? formatCurrency(totalStellaNum) : (totais.stellaFuturo || 'R$ 0,00'))}
                 </p>
               </div>
               <div className="border-t border-gray-700/80 pt-4 space-y-2 text-xs">
                 <div className="flex justify-between items-center pb-2 border-b border-gray-700/50">
                   <span className="text-emerald-400 font-medium">Total Futuro:</span>
-                  <span className="font-bold text-emerald-400">{totais.stellaFuturo || 'R$ 0,00'}</span>
+                  <span className="font-bold text-emerald-400">{mascarar(totais.stellaFuturo || 'R$ 0,00')}</span>
                 </div>
                 <div className="flex justify-between items-center pl-2 pt-1">
                   <span className="text-gray-500">└ Reserva:</span>
-                  <span className="font-medium text-emerald-400/80">{totais.stellaReserva || 'R$ 0,00'}</span>
+                  <span className="font-medium text-emerald-400/80">{mascarar(totais.stellaReserva || 'R$ 0,00')}</span>
                 </div>
                 <div className="flex justify-between items-center pl-2 pb-2 border-b border-gray-700/50">
                   <span className="text-gray-500">└ Casamento:</span>
-                  <span className="font-medium text-emerald-400/80">{totais.stellaCasamento || 'R$ 0,00'}</span>
+                  <span className="font-medium text-emerald-400/80">{mascarar(totais.stellaCasamento || 'R$ 0,00')}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1">
                   <span className="text-amber-400/80 font-medium">Pessoal:</span>
-                  <span className="font-bold text-amber-400/90">{totais.stellaPessoal || 'R$ 0,00'}</span>
+                  <span className="font-bold text-amber-400/90">{mascarar(totais.stellaPessoal || 'R$ 0,00')}</span>
                 </div>
               </div>
             </div>
@@ -507,7 +510,7 @@ export default function InvestimentosPage() {
             {/* VALOR TOTAL JUNTOS (Destaque Principal) */}
             <div className="bg-gradient-to-br from-blue-900/40 to-gray-900/40 p-6 rounded-2xl border border-blue-500/30 text-center shadow-lg flex flex-col justify-center transform transition-transform hover:scale-[1.02]">
               <h3 className="text-blue-400 text-sm font-bold uppercase tracking-wider mb-3">Valor Total Conjunto</h3>
-              <p className="text-4xl font-bold text-white tracking-tight">{totais.totalJuntos || 'R$ 0,00'}</p>
+              <p className="text-4xl font-bold text-white tracking-tight">{mascarar(totais.totalJuntos || 'R$ 0,00')}</p>
             </div>
           </div>
         )}

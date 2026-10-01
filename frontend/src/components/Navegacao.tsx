@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ReceiptText, ChartColumn, TrendingUp, Target } from 'lucide-react';
+import { ReceiptText, ChartColumn, TrendingUp, Target, Eye, EyeOff } from 'lucide-react';
+import { useValores } from './ValoresContext';
 
 const ITENS = [
   { href: '/investimentos', rotulo: 'Investimentos', curto: 'Invest.', Icone: TrendingUp, cor: 'text-emerald-400' },
@@ -13,17 +14,35 @@ const ITENS = [
 
 export default function Navegacao() {
   const caminho = usePathname();
+  const { oculto, alternar } = useValores();
   const ativo = (href: string) => caminho === href || caminho.startsWith(`${href}/`);
 
   return (
     <>
       {/* DESKTOP: barra lateral fixa */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-72 bg-gray-800 border-r border-gray-700/50 p-3 z-40">
-        <div className="mb-8">
-          <h1 className="text-lg font-bold text-blue-400 tracking-wide leading-tight">
-            Planejamento<br />Financeiro
-          </h1>
-          <p className="text-[11px] text-gray-500 mt-1">Davi &amp; Stella</p>
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-60 bg-gray-800 border-r border-gray-700/50 p-5 z-40">
+        <div className="mb-8 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-bold text-blue-400 tracking-wide leading-tight">
+              Planejamento<br />Financeiro
+            </h1>
+            <p className="text-[11px] text-gray-500 mt-1">Davi &amp; Stella</p>
+          </div>
+
+          {/* Esconder/mostrar os valores em R$ de todas as telas */}
+          <button
+            type="button"
+            onClick={alternar}
+            title={oculto ? 'Mostrar os valores' : 'Esconder os valores'}
+            aria-label={oculto ? 'Mostrar os valores' : 'Esconder os valores'}
+            className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all flex-shrink-0 ${
+              oculto
+                ? 'bg-blue-600/15 border-blue-500/40 text-blue-300'
+                : 'bg-gray-900/50 border-gray-700/50 text-gray-400 hover:text-blue-400 hover:border-blue-500/50'
+            }`}
+          >
+            {oculto ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
         </div>
 
         <nav className="flex flex-col gap-2">
@@ -64,6 +83,16 @@ export default function Navegacao() {
             </Link>
           );
         })}
+
+        <button
+          type="button"
+          onClick={alternar}
+          className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg transition-colors ${oculto ? 'text-blue-300' : 'text-gray-400'}`}
+          title={oculto ? 'Mostrar os valores' : 'Esconder os valores'}
+        >
+          {oculto ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          <span className="text-[10px] font-semibold">{oculto ? 'Mostrar' : 'Ocultar'}</span>
+        </button>
       </nav>
     </>
   );
