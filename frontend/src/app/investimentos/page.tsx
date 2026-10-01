@@ -367,7 +367,7 @@ export default function InvestimentosPage() {
                   className={`sm:w-auto px-4 p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all border flex items-center justify-center gap-2 ${divisaoManual ? 'bg-blue-600/15 border-blue-500/40 text-blue-300' : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'}`}
                 >
                   <SplitSquareHorizontal className="w-4 h-4" />
-                  {divisaoManual ? 'Divisão 70/30' : 'Dividir manual'}
+                  {divisaoManual ? 'Auto' : 'Manual'}
                 </button>
               </div>
             </form>
